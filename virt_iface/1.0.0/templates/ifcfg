@@ -1,0 +1,6 @@
+DEVICE={{name}}
+TYPE={{type}}
+IPADDR={{ipaddr}}
+NETMASK={{netmask}}
+ONBOOT={{onboot}}
+BOOTPROTO={{bootproto}}

@@ -1,0 +1,20 @@
+handler: ansible
+version: 1.0.0
+
+input:
+  # kubelet
+  kubelet_address:
+    schema: str
+    value: 0.0.0.0
+  kubelet_args:
+    schema: str
+    value: ""
+  kubelet_hostname:
+    schema: str
+    value: "127.0.0.1"
+  etcd_authority:
+    schema: str
+    value: ""
+  master_api:
+    schema: str
+    value: ""

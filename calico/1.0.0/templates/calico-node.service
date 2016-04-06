@@ -1,0 +1,18 @@
+[Unit]
+Description=calicoctl node
+Requires=docker.service
+After=docker.service
+
+[Service]
+User=root
+Environment="ETCD_AUTHORITY={{etcd_authority_internal}}"
+PermissionsStartOnly=true
+ExecStartPre=/usr/bin/calicoctl checksystem --fix
+{% if not kubernetes %}
+ExecStart=/usr/bin/calicoctl node --ip={{ip}} --detach=false
+{% else %} 
+ExecStart=/usr/bin/calicoctl node --ip={{ip}} --detach=false --kubernetes
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

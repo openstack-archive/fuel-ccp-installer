@@ -1,0 +1,24 @@
+handler: ansible
+version: 1.0.0
+
+input:
+  # listen_client_urls:
+  #   schema: [str!]
+  #   value:
+  # advertise_client_urls:
+  #   schema: [str!]
+  #   value: []
+  listen_client_url:
+    schema: [str!]
+    value: null
+    computable:
+      lang: jinja2
+      type: full
+      func: |
+        http://{{listen_client_host}}:{{listen_client_port}}
+  listen_client_host:
+    schema: str!
+    value:
+  listen_client_port:
+    schema: int!
+    value: 4001

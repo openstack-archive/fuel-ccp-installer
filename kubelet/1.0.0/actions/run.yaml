@@ -1,0 +1,17 @@
+- hosts: [{{host}}]
+  become: yes
+  tasks:
+    - dnf: name=kubernetes state=present enablerepo=updates-testing
+    - template:
+        src: {{templates_dir}}/kubernetes_config
+        dest: /etc/kubernetes/config
+    - template:
+        src: {{templates_dir}}/kubelet
+        dest: /etc/kubernetes/kubelet
+    - file: name=/var/run/kubernetes state=directory
+    - shell: chown kube:kube /var/run/kubernetes
+    - shell: chmod 750 /var/run/kubernetes
+    {% for service in ["kube-proxy", "kubelet"] %}
+    - service: name={{service}} state=restarted enabled=yes
+    {% endfor %}
+

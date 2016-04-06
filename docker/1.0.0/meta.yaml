@@ -1,0 +1,7 @@
+handler: ansible
+version: 1.0.0
+input:
+  iface:
+    schema: str!
+    value: null
+

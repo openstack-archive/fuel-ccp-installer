@@ -1,0 +1,8 @@
+- hosts: [{{host}}]
+  become: yes
+  tasks:
+    - dnf: name=etcd state=present enablerepo=updates-testing
+    - template:
+        src: {{templates_dir}}/etcd.conf
+        dest: /etc/etcd/etcd.conf
+    - service: name=etcd.service enabled=yes state=restarted

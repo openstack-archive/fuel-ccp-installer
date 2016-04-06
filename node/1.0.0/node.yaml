@@ -1,0 +1,37 @@
+resources:
+  - id: ssh_transport_node_#{name}#
+    from: resources/transport_ssh
+    input:
+      user: #{ssh_user}#
+      key: #{ssh_key}#
+      password: #{ssh_password}#
+  - id: rsync_node_#{name}#
+    from: resources/transport_rsync
+    input:
+      user: #{ssh_user}#
+      key: #{ssh_key}#
+      password: #{ssh_password}#
+  - id: transports_node_#{name}#
+    from: resources/transports
+    input:
+      transports:
+        - key: ssh_transport_node_#{name}#::key
+          user: ssh_transport_node_#{name}#::user
+          port: ssh_transport_node_#{name}#::port
+          name: ssh_transport_node_#{name}#::name
+          password: ssh_transport_node_#{name}#::password
+        - key: rsync_node_#{name}#::key
+          name: rsync_node_#{name}#::name
+          user: rsync_node_#{name}#::user
+          port: rsync_node_#{name}#::port
+          password: rsync_node_#{name}#::password
+  - id: '#{name}#'
+    from: k8s/fedora_cloud_base
+    input:
+      name: '#{name}#'
+      ip: '#{ip}#'
+      transports_id: transports_node_#{name}#::transports_id
+  - id: hosts_file_node_#{name}#
+    from: resources/hosts_file
+    location: '#{name}#'
+    tags: ['location=#{name}#']
