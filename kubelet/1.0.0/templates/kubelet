@@ -15,7 +15,7 @@ KUBELET_API_SERVER="--api-servers={{master_api}}"
 
 # Add your own!
 # (solar) we could parametrize calico
-KUBELET_ARGS="{{kubelet_args}}"
+KUBELET_ARGS="{{kubelet_args}} --v=5"
 
 ETCD_AUTHORITY="{{etcd_authority}}"
 KUBE_API_ROOT="{{master_api}}/api/v1"
