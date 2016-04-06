@@ -1,6 +1,7 @@
 This repository contains resources for configuring kubernetes with calico networking plugin using Solar.
 
 Setup:
+
 1. You need solar dev env for now.
 2. Put Vagrantfile_solar instead of default Vagrantfile that is included in solar.
 3. Add fc23 vagrant box: `vagrant box add fc23 Fedora-Cloud-Base-Vagrant-23-20151030.x86_64.vagrant-libvirt.box --provider libvirt  --force`
