@@ -2,7 +2,7 @@
   become: yes
   tasks:
     - get_url:
-        url: https://github.com/Metaswitch/calico-docker/releases/download/v0.5.5/calicoctl
+        url: https://github.com/Metaswitch/calico-docker/releases/download/v0.18.0/calicoctl
         dest: /tmp/calicoctl
     - shell: chmod +x /tmp/calicoctl
     - shell: sudo mv /tmp/calicoctl /usr/bin

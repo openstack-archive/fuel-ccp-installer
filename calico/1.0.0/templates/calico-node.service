@@ -11,7 +11,7 @@ ExecStartPre=/usr/bin/calicoctl checksystem --fix
 {% if not kubernetes %}
 ExecStart=/usr/bin/calicoctl node --ip={{ip}} --detach=false
 {% else %} 
-ExecStart=/usr/bin/calicoctl node --ip={{ip}} --detach=false --kubernetes
+ExecStart=/usr/bin/calicoctl node --ip={{ip}} --detach=false
 {% endif %}
 
 [Install]
