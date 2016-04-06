@@ -1,0 +1,12 @@
+handler: ansible
+version: 1.0.0
+input:
+  etcd_authority:
+    schema: str!
+    value: null
+  cni_netd:
+    schema: str!
+    value: /etc/cni/net.d
+  log_level:
+    schema: str!
+    value: info

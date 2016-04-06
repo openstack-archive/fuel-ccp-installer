@@ -7,9 +7,6 @@ input:
   etcd_authority:
     schema: str!
     value: null
-  kubernetes:
-    schema: bool!
-    value: false
   etcd_authority_internal:
     schema: str!
     value: null

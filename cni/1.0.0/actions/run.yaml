@@ -1,0 +1,15 @@
+- hosts: [{{host}}]
+  become: yes
+  tasks:
+    - file: name=/opt/cni/bin state=directory
+    - get_url:
+        url: https://github.com/projectcalico/calico-cni/releases/download/v1.2.0/calico
+        dest: /opt/cni/bin/calico
+    - get_url:
+        url: https://github.com/projectcalico/calico-cni/releases/download/v1.2.0/calico-ipam
+        dest: /opt/cni/bin/calico-ipam
+    - shell: chmod +x /opt/cni/bin/calico /opt/cni/bin/calico-ipam
+    - file: name={{cni_netd}} state=directory
+    - template:
+        src: {{templates_dir}}/10-calico.conf
+        dest: {{cni_netd}}/10-calico.conf

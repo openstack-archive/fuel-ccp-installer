@@ -61,9 +61,7 @@ def setup_nodes(num=1):
              'type': 'Bridge'})['kube-node-%d-iface' % j]
         kube_node.connect(iface_node, {})
 
-        calico_node = cr.create('calico-node-%d' % j, 'k8s/calico', {
-            'kubernetes': True
-        })[0]
+        calico_node = cr.create('calico-node-%d' % j, 'k8s/calico', {})[0]
 
         add_event(Dep(calico_master.name, 'run', 'success', calico_node.name, 'run'))
 
@@ -75,14 +73,19 @@ def setup_nodes(num=1):
 
         etcd.connect(calico_node, {'listen_client_url': 'etcd_authority'})
 
+        calico_cni = cr.create('calico-cni-node-%d' % j, 'k8s/cni', {})[0]
+        calico_node.connect(calico_cni, {'etcd_authority_internal': 'etcd_authority'})
+
         docker = cr.create('kube-docker-%d' % j,
                            'k8s/docker')['kube-docker-%d' % j]
+
+        add_event(Dep(calico_cni.name, 'run', 'success', docker.name, 'run'))
 
         kube_node.connect(docker, {})
         iface_node.connect(docker, {'name': 'iface'})
 
         kubelet = cr.create('kubelet-node-%d' % j, 'k8s/kubelet', {
-            'kubelet_args': '--network-plugin=calico',
+            'kubelet_args': '--v=5 --network-plugin=cni --network-plugin-dir=/etc/cni/net.d',
         })['kubelet-node-%d' % j]
 
         kube_node.connect(kubelet, {'name': 'kubelet_hostname'})
