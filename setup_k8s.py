@@ -118,8 +118,20 @@ def add_dashboard():
     kube_master.connect(dashboard, {'ip': 'api_host'})
 
 
+def add_dns():
+    config = rs.load('kube-config')
+    kube_master = rs.load('kube-node-master')
+    master = rs.load('k8s-master')
+    kube_dns = cr.create('kube-dns', 'k8s/kubedns', {})[0]
+    master.connect(kube_dns, {'master_port': 'api_port'})
+    kube_master.connect(kube_dns, {'ip': 'api_host'})
+    config.connect(kube_dns, {'dns_domain': 'dns_domain'})
+
+
 setup_master()
 
 setup_nodes(1)
 
 # add_dashboard()
+
+# add_dns()

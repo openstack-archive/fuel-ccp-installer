@@ -1,0 +1,15 @@
+handler: ansible
+version: 1.0.0
+input:
+  api_host:
+    schema: str!
+    value: null
+  api_port:
+    schema: int!
+    value: null
+  app_name:
+    schema: str!
+    value: kube-dns
+  dns_domain:
+    schema: str!
+    value: null
