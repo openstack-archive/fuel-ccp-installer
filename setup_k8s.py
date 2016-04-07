@@ -83,7 +83,7 @@ def setup_nodes(num=1):
         docker = cr.create('kube-docker-%d' % j,
                            'k8s/docker')['kube-docker-%d' % j]
 
-        add_event(Dep(calico_cni.name, 'run', 'success', docker.name, 'run'))
+        add_event(Dep(docker.name, 'run', 'success', calico_node.name, 'run'))
 
         kube_node.connect(docker, {})
         iface_node.connect(docker, {'name': 'iface'})
