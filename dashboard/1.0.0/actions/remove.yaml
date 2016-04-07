@@ -1,0 +1,5 @@
+- hosts: [{{host}}]
+  become: yes
+  tasks:
+    - shell: kubectl delete service {{app_name}} --namespace=kube-system
+    - shell: kubectl delete rc {{app_name}} --namespace=kube-system

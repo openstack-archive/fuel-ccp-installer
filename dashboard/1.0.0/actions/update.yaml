@@ -1,0 +1,13 @@
+- hosts: [{{host}}]
+  become: yes
+  tasks:
+    - shell: kubectl delete service {{app_name}} --namespace=kube-system
+    - shell: kubectl delete rc {{app_name}} --namespace=kube-system
+    - template:
+        src: {{templates_dir}}/dashboard_rc.tmpl
+        dest: {{templates_dir}}/dashboard_rc.yaml
+    - template:
+        src: {{templates_dir}}/dashboard_service.tmpl
+        dest: {{templates_dir}}/dashboard_service.yaml
+    - shell: kubectl create -f {{templates_dir}}/dashboard_rc.yaml
+    - shell: kubectl create -f {{templates_dir}}/dashboard_service.yaml

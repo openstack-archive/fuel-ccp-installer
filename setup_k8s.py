@@ -110,6 +110,16 @@ def setup_nodes(num=1):
             })
 
 
+def add_dashboard():
+    kube_master = rs.load('kube-node-master')
+    master = rs.load('k8s-master')
+    dashboard = cr.create('kubernetes-dashboard', 'k8s/dashboard', {})[0]
+    master.connect(dashboard, {'master_port': 'api_port'})
+    kube_master.connect(dashboard, {'ip': 'api_host'})
+
+
 setup_master()
 
 setup_nodes(1)
+
+# add_dashboard()

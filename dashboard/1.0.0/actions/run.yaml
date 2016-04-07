@@ -1,0 +1,11 @@
+- hosts: [{{host}}]
+  become: yes
+  tasks:
+    - template:
+        src: {{templates_dir}}/dashboard_rc.tmpl
+        dest: {{templates_dir}}/dashboard_rc.yaml
+    - template:
+        src: {{templates_dir}}/dashboard_service.tmpl
+        dest: {{templates_dir}}/dashboard_service.yaml
+    - shell: kubectl create -f {{templates_dir}}/dashboard_rc.yaml
+    - shell: kubectl create -f {{templates_dir}}/dashboard_service.yaml
