@@ -1,0 +1,10 @@
+handler: none
+version: 1.0.0
+input:
+  dns_cluster_ip:
+    schema: str!
+    value: null
+  dns_domain:
+    schema: str!
+    value: null
+
