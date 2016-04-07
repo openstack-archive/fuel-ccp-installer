@@ -14,4 +14,7 @@
     {% for service in ["etcd", "kube-apiserver", "kube-controller-manager", "kube-scheduler"] %}
     - service: name={{service}} state=restarted enabled=yes
     {% endfor %}
-
+    - shell: kubectl get namespaces
+      register: kube_namespaces
+    - shell: kubectl create namespace kube-system
+      when: "'kube-system' not in kube_namespaces.stdout"
