@@ -11,6 +11,8 @@ from itertools import combinations
 
 
 def setup_master():
+    config = cr.create('kube-config', 'k8s/global_config', {'dns_cluster_ip': '10.254.0.10',
+                                                            'dns_domain': 'cluster.local'})[0]
     master = cr.create('kube-node-master', 'k8s/node', {'name': 'kube-node-master',
                                                          'ip': '10.0.0.3',
                                                          'ssh_user': 'vagrant',
@@ -31,6 +33,7 @@ def setup_master():
     master.connect(calico, {'ip': 'ip'})
     etcd.connect(calico, {'listen_client_url': 'etcd_authority'})
     calico.connect(calico, {'etcd_authority': 'etcd_authority_internal'})
+    master.connect(config, {})
 
 
 def setup_nodes(num=1):
@@ -38,6 +41,7 @@ def setup_nodes(num=1):
     etcd = rs.load('etcd')
     kubernetes_master = rs.load('k8s-master')
     calico_master = rs.load('calico-master')
+    config = rs.load('kube-config')
     for i in xrange(num):
         j = i + 1
         kube_node = cr.create(
@@ -85,12 +89,14 @@ def setup_nodes(num=1):
         iface_node.connect(docker, {'name': 'iface'})
 
         kubelet = cr.create('kubelet-node-%d' % j, 'k8s/kubelet', {
-            'kubelet_args': '--v=5 --network-plugin=cni --network-plugin-dir=/etc/cni/net.d',
+            'kubelet_args': '--v=5',
         })['kubelet-node-%d' % j]
 
         kube_node.connect(kubelet, {'name': 'kubelet_hostname'})
         kubernetes_master.connect(kubelet, {'master_address': 'master_api'})
         calico_node.connect(kubelet, {'etcd_authority_internal': 'etcd_authority'})
+        config.connect(kubelet, {'dns_domain': 'dns_domain',
+                                 'dns_cluster_ip': 'dns_cluster_ip'})
 
         kube_nodes.append(kube_node)
     kube_master = rs.load('kube-node-master')

@@ -14,8 +14,7 @@ KUBELET_HOSTNAME="--hostname-override={{kubelet_hostname}}"
 KUBELET_API_SERVER="--api-servers={{master_api}}"
 
 # Add your own!
-# (solar) we could parametrize calico
-KUBELET_ARGS="{{kubelet_args}}"
+KUBELET_ARGS="{{kubelet_args}}  --network-plugin=cni --network-plugin-dir=/etc/cni/net.d --cluster_dns={{dns_cluster_ip}} --cluster_domain={{dns_domain}}"
 
 ETCD_AUTHORITY="{{etcd_authority}}"
 KUBE_API_ROOT="{{master_api}}/api/v1"

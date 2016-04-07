@@ -18,3 +18,9 @@ input:
   master_api:
     schema: str
     value: ""
+  dns_domain:
+    schema: str!
+    value: null
+  dns_cluster_ip:
+    schema: str!
+    value: null
