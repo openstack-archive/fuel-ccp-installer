@@ -1,0 +1,33 @@
+handler: ansible
+version: 1.0.0
+
+input:
+  kubelet_args:
+    schema: str
+    value: ""
+  cluster_dns:
+    schema: str!
+    value: null
+  cluster_domain:
+    schema: str!
+    value: null
+  master_port:
+    schema: int
+    value: 8080
+  master_host:
+    schema: str
+    value: null
+  master_address:
+    schema: str
+    value: null
+    computable:
+      lang: jinja2
+      type: full
+      func: |
+        http://{{master_host}}:{{master_port}}
+  service_cluster_ip_range:
+    schema: str!
+    value: null
+  admission_control:
+    schema: str!
+    value: NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ResourceQuota

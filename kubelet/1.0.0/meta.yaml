@@ -12,15 +12,15 @@ input:
   kubelet_hostname:
     schema: str
     value: "127.0.0.1"
+  master_api:
+    schema: str!
+    value: ""
+  cluster_domain:
+    schema: str!
+    value: null
+  cluster_dns:
+    schema: str!
+    value: null
   etcd_authority:
     schema: str
     value: ""
-  master_api:
-    schema: str
-    value: ""
-  dns_domain:
-    schema: str!
-    value: null
-  dns_cluster_ip:
-    schema: str!
-    value: null

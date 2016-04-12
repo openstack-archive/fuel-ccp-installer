@@ -10,7 +10,7 @@ metadata:
 spec:
   selector:
     k8s-app: {{app_name}}
-  clusterIP: 10.254.0.10
+  clusterIP: {{cluster_dns}}
   ports:
   - name: dns
     port: 53
@@ -103,7 +103,7 @@ spec:
           timeoutSeconds: 5
         args:
         # command = "/kube2sky"
-        - --domain={{dns_domain}}
+        - --domain={{cluster_domain}}
         - --kube-master-url=http://{{api_host}}:{{api_port}}
       - name: skydns
         image: gcr.io/google_containers/skydns:2015-10-13-8c72f8c
@@ -123,7 +123,7 @@ spec:
         - -machines=http://127.0.0.1:4001
         - -addr=0.0.0.0:53
         - -ns-rotate=false
-        - -domain={{dns_domain}}
+        - -domain={{cluster_domain}}
         ports:
         - containerPort: 53
           name: dns

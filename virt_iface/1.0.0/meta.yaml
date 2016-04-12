@@ -7,6 +7,9 @@ input:
   netmask:
     schema: str!
     value: null
+  prefix:
+    schema: int!
+    value: null
   type:
     schema: str!
     value: null

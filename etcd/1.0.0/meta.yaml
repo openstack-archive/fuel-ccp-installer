@@ -16,9 +16,20 @@ input:
       type: full
       func: |
         http://{{listen_client_host}}:{{listen_client_port}}
+  listen_client_url_events:
+    schema: [str!]
+    value: null
+    computable:
+      lang: jinja2
+      type: full
+      func: |
+        http://{{listen_client_host}}:{{listen_client_port_events}}
   listen_client_host:
     schema: str!
     value:
   listen_client_port:
     schema: int!
     value: 4001
+  listen_client_port_events:
+    schema: int!
+    value: 4002

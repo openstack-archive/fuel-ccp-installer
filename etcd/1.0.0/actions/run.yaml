@@ -1,8 +1,10 @@
 - hosts: [{{host}}]
   become: yes
   tasks:
-    - dnf: name=etcd state=present enablerepo=updates-testing
+    # without these lines: can't create /var/log/etcd.log: Is a directory
+    - file: name=/var/log/etcd.log state=touch
+    - file: name=/var/log/etcd-events.log state=touch
+
     - template:
-        src: {{templates_dir}}/etcd.conf
-        dest: /etc/etcd/etcd.conf
-    - service: name=etcd.service enabled=yes state=restarted
+        src: {{templates_dir}}/etcd.manifest
+        dest: /etc/kubernetes/manifests/etcd.manifest

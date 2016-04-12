@@ -10,6 +10,9 @@ input:
   app_name:
     schema: str!
     value: kube-dns
-  dns_domain:
+  cluster_domain:
+    schema: str!
+    value: null
+  cluster_dns:
     schema: str!
     value: null

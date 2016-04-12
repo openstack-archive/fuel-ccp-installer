@@ -1,0 +1,26 @@
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/kubernetes/kubernetes
+After=calico-node.service
+Requires=calico-node.service
+
+[Service]
+Environment="ETCD_AUTHORITY={{etcd_authority}}"
+Environment="KUBE_API_ROOT="{{master_api}}/api/v1""
+ExecStart=/usr/bin/kubelet \
+--address=0.0.0.0 \
+--allow-privileged=true \
+--cluster-dns={{cluster_dns}} \
+--cluster-domain={{cluster_domain}} \
+--config=/etc/kubernetes/manifests \
+--hostname-override={{kubelet_hostname}} \
+--api-servers={{master_api}} \
+--logtostderr=true \
+--network-plugin=cni \
+--network-plugin-dir=/etc/cni/net.d \
+{{kubelet_args}}
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

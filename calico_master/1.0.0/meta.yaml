@@ -1,0 +1,37 @@
+handler: ansible
+version: 1.0.0
+input:
+  ip:
+    schema: str!
+    value: null
+  etcd_host:
+    schema: str!
+    value: null
+  etcd_authority:
+    schema: str!
+    value: null
+    computable:
+      lang: jinja
+      type: full
+      func: |
+        http://{{etcd_host}}:{{etcd_port}}
+  etcd_authority_internal:
+    schema: str!
+    value: null
+    computable:
+      lang: python
+      type: full
+      func: |
+        return R[resource_name]['etcd_authority'].replace('http://', '')
+  etcd_port:
+    schema: int!
+    value: 6666
+  options:
+    schema: str
+    value:
+  network:
+    schema: str
+    value:
+  prefix:
+    schema: int
+    value:
