@@ -125,7 +125,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.box = SLAVES_IMAGE
       config.vm.box_version = SLAVES_IMAGE_VERSION
       config.vm.host_name = "solar-dev#{index}"
-			config.vm.provision "shell", inline: 'dnf install python', privileged: true
 
       if PREPROVISIONED
         # config.vm.provision "shell", inline: fix_six, privileged: true
