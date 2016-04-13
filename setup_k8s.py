@@ -68,7 +68,7 @@ def setup_nodes(num=1):
             'kube-node-%d-iface' % j,
             'k8s/virt_iface',
             {'name': 'cbr0',
-             'ipaddr': '172.18.%d.1' % (i + 1),  # TODO(jnowak) support config for it
+             'ipaddr': '172.20.%d.1' % (i + 1),  # TODO(jnowak) support config for it
              'onboot': 'yes',
              'bootproto': 'static',
              'type': 'Bridge'})['kube-node-%d-iface' % j]
