@@ -1,29 +1,31 @@
 #!/usr/bin/env python
 
+import argparse
+from itertools import combinations
+
+from netaddr import IPAddress
+
 from solar.core.resource import composer as cr
 from solar.core.resource import resource as rs
-
 from solar.events.controls import Dep
 from solar.events.controls import React
 from solar.events.api import add_event
 
-from itertools import combinations
 
 
-def setup_master():
-    config = cr.create('kube-config', 'k8s/global_config', {'cluster_dns': '10.254.0.10',
-                                                            'cluster_domain': 'cluster.local'})[0]
+def create_config():
+    return cr.create('kube-config', 'k8s/global_config',
+                     {'cluster_dns': '10.254.0.10',
+                      'cluster_domain': 'cluster.local'}
+                     )[0]
+
+
+def setup_master(config):
     master = cr.create('kube-node-master', 'k8s/node', {'name': 'kube-node-master',
                                                         'ip': '10.0.0.3',
                                                         'ssh_user': 'vagrant',
                                                         'ssh_password': 'vagrant',
                                                         'ssh_key': None})['kube-node-master']
-    # etcd = cr.create('etcd', 'k8s/etcd', {'listen_client_port': 4001})['etcd']
-    # master.connect(etcd, {'name': 'listen_client_host'})
-    # etcd.connect(etcd, {'listen_client_host': 'listen_client_url',
-    #                     'listen_client_port': 'listen_client_url'})
-    #                     # 'listen_client_port_events': 'listen_client_url_events',
-    #                     # 'listen_client_host': 'listen_client_url_events'})
 
     master.connect(config, {})
     docker = cr.create('kube-docker-master', 'k8s/docker')['kube-docker-master']
@@ -47,11 +49,12 @@ def setup_master():
     add_event(Dep(kubelet.name, 'run', 'success', calico.name, 'run'))
 
 
-def setup_nodes(num=1):
+def setup_nodes(config, num=1):
     kube_nodes = []
     kubernetes_master = rs.load('kubelet-master')
     calico_master = rs.load('calico-master')
-    config = rs.load('kube-config')
+    network = IPAddress(config.args['network'])
+
     for i in xrange(num):
         j = i + 1
         kube_node = cr.create(
@@ -68,7 +71,7 @@ def setup_nodes(num=1):
             'kube-node-%d-iface' % j,
             'k8s/virt_iface',
             {'name': 'cbr0',
-             'ipaddr': '172.20.%d.1' % (i + 1),  # TODO(jnowak) support config for it
+             'ipaddr': str(network + 256 * j + 1),
              'onboot': 'yes',
              'bootproto': 'static',
              'type': 'Bridge'})['kube-node-%d-iface' % j]
@@ -136,10 +139,16 @@ def add_dns():
                               'cluster_dns': 'cluster_dns'})
 
 
-# setup_master()
+def deploy_k8s():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--nodes', type=int, default=1)
 
-# setup_nodes(1)
+    args = parser.parse_args()
 
-# add_dashboard()
+    config = create_config()
+    setup_master(config)
+    setup_nodes(config, args.nodes)
 
-add_dns()
+
+if __name__ == "__main__":
+    deploy_k8s()
