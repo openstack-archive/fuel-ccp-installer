@@ -1,4 +1,4 @@
-handler: ansible_local
+handler: shell
 version: 1.0.0
 input:
     ip:

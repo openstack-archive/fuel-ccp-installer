@@ -1,6 +1,0 @@
-- hosts: "*"
-  become: yes
-  tasks:
-    - shell: dnf install -y python-dnf
-    - dnf: name=ansible state=present
-    - dnf: name=libselinux-python state=present
