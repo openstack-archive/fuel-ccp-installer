@@ -21,6 +21,5 @@ Vagrant setup:
 11. solar changes process
 12. solar orch run-once
 13. watch solar orch report
-14. (if something fails it's possible that k8s didn't start yet, let's try again) solar orch retry last
-15. vagrant ssh solar-dev1
-16. kubectl get pods (it works!)
+14. vagrant ssh solar-dev1
+15. kubectl get pods (it works!)
