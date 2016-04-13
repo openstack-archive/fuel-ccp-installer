@@ -1,0 +1,6 @@
+- hosts: [{{host}}]
+  become: yes
+  tasks:
+    {% if options %}
+    - shelL: calico pool add {{options}}
+    {% endif %}

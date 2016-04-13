@@ -68,7 +68,7 @@ def setup_nodes(num=1):
             'kube-node-%d-iface' % j,
             'k8s/virt_iface',
             {'name': 'cbr0',
-             'ipaddr': '192.168.%d.1' % (i + 1),  # TODO(jnowak) support config for it
+             'ipaddr': '172.18.%d.1' % (i + 1),  # TODO(jnowak) support config for it
              'onboot': 'yes',
              'bootproto': 'static',
              'type': 'Bridge'})['kube-node-%d-iface' % j]
@@ -136,10 +136,10 @@ def add_dns():
                               'cluster_dns': 'cluster_dns'})
 
 
-setup_master()
+# setup_master()
 
-setup_nodes(1)
+# setup_nodes(1)
 
 # add_dashboard()
 
-# add_dns()
+add_dns()
