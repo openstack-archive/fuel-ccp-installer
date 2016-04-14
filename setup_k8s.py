@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import re
 
 from netaddr import IPAddress
 
@@ -151,6 +152,34 @@ def add_dns(args):
                               'cluster_dns': 'cluster_dns'})
 
 
+def add_node(args):
+    config = rs.load('kube-config')
+    kubernetes_master = rs.load('kubelet-master')
+    calico_master = rs.load('calico-master')
+    internal_network = IPAddress('10.0.0.0')
+    external_network = IPAddress(config.args['network'])
+
+    def get_node_id(n):
+        return n.name.split('-')[-1]
+
+    kube_nodes = rs.load_all(startswith='kube-node-')
+    p = re.compile('^kube-node-\d+$')
+    kube_nodes = [node for node in kube_nodes if p.match(node.name)]
+    newest_id = int(get_node_id(max(kube_nodes, key=get_node_id)))
+
+    new_nodes = [setup_slave_node(config, kubernetes_master, calico_master,
+                                  internal_network, external_network, i)
+                 for i in xrange(newest_id, newest_id + args.nodes)]
+
+    hosts_files = rs.load_all(startswith='hosts_file_node_kube-')
+    for node in new_nodes:
+        for host_file in hosts_files:
+            node.connect(host_file, {
+                'name': 'hosts:name',
+                'ip': 'hosts:ip'
+            })
+
+
 def deploy_k8s(args):
     config = create_config()
     setup_master(config)
@@ -166,7 +195,8 @@ def deploy_k8s(args):
 commands = {
     'deploy': deploy_k8s,
     'dashboard': add_dashboard,
-    'dns': add_dns
+    'dns': add_dns,
+    'add-node': add_node
 }
 
 
@@ -174,7 +204,8 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('command', type=str, choices=commands.keys())
     parser.add_argument('--nodes', type=int, default=1,
-                        help='Slave node count. Works with deploy only')
+                        help='Slave node count. Works with deploy and '
+                        'add-node')
     parser.add_argument('--dashboard', dest='dashboard', action='store_true',
                         help='Add dashboard. Works with deploy only. Can be '
                              ' done separately with `setup_k8s.py dashboard`')
