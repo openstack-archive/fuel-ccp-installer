@@ -15,3 +15,6 @@ input:
       type: full
       func: |
         return R[resource_name]['etcd_authority'].replace('http://', '')
+  version:
+    schema: str!
+    value:

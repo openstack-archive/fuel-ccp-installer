@@ -56,7 +56,8 @@ def setup_master(config, user_config):
                        {'options': "--nat-outgoing --ipip"})['calico-master']
     master.connect(calico, {'ip': ['ip', 'etcd_host']})
     config.connect(calico, {'network': 'network',
-                            'prefix': 'prefix'})
+                            'prefix': 'prefix',
+                            'calico_version': 'version'})
     calico.connect(calico, {'etcd_host': 'etcd_authority',
                             'etcd_port': 'etcd_authority',
                             'etcd_authority': 'etcd_authority_internal'})
@@ -118,6 +119,8 @@ def setup_slave_node(config, user_config, kubernetes_master, calico_master,
     config.connect(iface_node, {'netmask': 'netmask'})
 
     calico_node = cr.create('calico-node-%d' % j, 'k8s/calico', {})[0]
+
+    config.connect(calico_node, {'calico_version': 'version'})
 
     kube_node.connect(calico_node, {'ip': 'ip'})
     calico_master.connect(calico_node,
