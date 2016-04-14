@@ -171,8 +171,10 @@ def add_node(args):
                                   internal_network, external_network, i)
                  for i in xrange(newest_id, newest_id + args.nodes)]
 
+    kube_master = rs.load('kube-node-master')
+    all_nodes = kube_nodes[:] + [kube_master]
     hosts_files = rs.load_all(startswith='hosts_file_node_kube-')
-    for node in new_nodes:
+    for node in all_nodes:
         for host_file in hosts_files:
             node.connect(host_file, {
                 'name': 'hosts:name',
