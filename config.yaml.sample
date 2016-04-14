@@ -1,0 +1,21 @@
+---
+kube_master:
+  username: vagrant
+  password: vagrant
+  ssh_key: null
+  ip: 10.0.0.3
+dns:
+  ip: 10.254.0.10
+  domain: cluster.local
+kube_slaves:
+  username: vagrant
+  password: vagrant
+  ssh_key: null
+  ips:
+    - 10.0.0.4
+    - 10.0.0.5
+    - 10.0.0.6
+    - 10.0.0.7
+    - 10.0.0.8
+    - 10.0.0.9
+    - 10.0.0.10
