@@ -58,62 +58,11 @@ def setup_nodes(config, num=1):
     internal_network = IPAddress('10.0.0.0')
     external_network = IPAddress(config.args['network'])
 
-    for i in xrange(num):
-        j = i + 1
-        kube_node = cr.create(
-            'kube-node-%d' % j,
-            'k8s/node',
-            {'name': 'kube-node-%d' % j,
-             'ip': str(internal_network + j + 3),
-             'ssh_user': 'vagrant',
-             'ssh_password': 'vagrant',
-             'ssh_key': None}
-        )['kube-node-%d' % j]
+    kube_nodes = [
+        setup_slave_node(config, kubernetes_master, calico_master,
+                         internal_network, external_network, i)
+        for i in xrange(num)]
 
-        iface_node = cr.create(
-            'kube-node-%d-iface' % j,
-            'k8s/virt_iface',
-            {'name': 'cbr0',
-             'ipaddr': str(external_network + 256 * j + 1),
-             'onboot': 'yes',
-             'bootproto': 'static',
-             'type': 'Bridge'})['kube-node-%d-iface' % j]
-        kube_node.connect(iface_node, {})
-
-        config.connect(iface_node, {'netmask': 'netmask'})
-
-        calico_node = cr.create('calico-node-%d' % j, 'k8s/calico', {})[0]
-
-        kube_node.connect(calico_node, {'ip': 'ip'})
-        calico_master.connect(calico_node,
-                              {'etcd_authority': 'etcd_authority'})
-        calico_node.connect(calico_node, {
-            'etcd_authority': 'etcd_authority_internal'
-        })
-        calico_cni = cr.create('calico-cni-node-%d' % j, 'k8s/cni', {})[0]
-        calico_node.connect(calico_cni,
-                            {'etcd_authority_internal': 'etcd_authority'})
-
-        docker = cr.create('kube-docker-%d' % j,
-                           'k8s/docker')['kube-docker-%d' % j]
-
-        kube_node.connect(docker, {})
-        iface_node.connect(docker, {'name': 'iface'})
-
-        kubelet = cr.create('kubelet-node-%d' % j, 'k8s/kubelet', {
-            'kubelet_args': '--v=5',
-        })['kubelet-node-%d' % j]
-
-        kube_node.connect(kubelet, {'name': 'kubelet_hostname'})
-        kubernetes_master.connect(kubelet, {'master_address': 'master_api'})
-        config.connect(kubelet, {'cluster_domain': 'cluster_domain',
-                                 'cluster_dns': 'cluster_dns'})
-
-        add_event(Dep(docker.name, 'run', 'success', calico_node.name, 'run'))
-        add_event(Dep(docker.name, 'run', 'success', kubelet.name, 'run'))
-        add_event(Dep(calico_node.name, 'run', 'success', kubelet.name, 'run'))
-
-        kube_nodes.append(kube_node)
     kube_master = rs.load('kube-node-master')
     all_nodes = kube_nodes[:] + [kube_master]
     hosts_files = rs.load_all(startswith='hosts_file_node_kube-')
@@ -123,6 +72,64 @@ def setup_nodes(config, num=1):
                 'name': 'hosts:name',
                 'ip': 'hosts:ip'
             })
+
+
+def setup_slave_node(config, kubernetes_master, calico_master,
+                     internal_network, external_network, i):
+    j = i + 1
+    kube_node = cr.create(
+        'kube-node-%d' % j,
+        'k8s/node',
+        {'name': 'kube-node-%d' % j,
+         'ip': str(internal_network + j + 3),
+         'ssh_user': 'vagrant',
+         'ssh_password': 'vagrant',
+         'ssh_key': None}
+    )['kube-node-%d' % j]
+
+    iface_node = cr.create(
+        'kube-node-%d-iface' % j,
+        'k8s/virt_iface',
+        {'name': 'cbr0',
+         'ipaddr': str(external_network + 256 * j + 1),
+         'onboot': 'yes',
+         'bootproto': 'static',
+         'type': 'Bridge'})['kube-node-%d-iface' % j]
+    kube_node.connect(iface_node, {})
+
+    config.connect(iface_node, {'netmask': 'netmask'})
+
+    calico_node = cr.create('calico-node-%d' % j, 'k8s/calico', {})[0]
+
+    kube_node.connect(calico_node, {'ip': 'ip'})
+    calico_master.connect(calico_node,
+                          {'etcd_authority': 'etcd_authority'})
+    calico_node.connect(calico_node, {
+        'etcd_authority': 'etcd_authority_internal'
+    })
+    calico_cni = cr.create('calico-cni-node-%d' % j, 'k8s/cni', {})[0]
+    calico_node.connect(calico_cni,
+                        {'etcd_authority_internal': 'etcd_authority'})
+
+    docker = cr.create('kube-docker-%d' % j,
+                       'k8s/docker')['kube-docker-%d' % j]
+
+    kube_node.connect(docker, {})
+    iface_node.connect(docker, {'name': 'iface'})
+
+    kubelet = cr.create('kubelet-node-%d' % j, 'k8s/kubelet', {
+        'kubelet_args': '--v=5',
+    })['kubelet-node-%d' % j]
+
+    kube_node.connect(kubelet, {'name': 'kubelet_hostname'})
+    kubernetes_master.connect(kubelet, {'master_address': 'master_api'})
+    config.connect(kubelet, {'cluster_domain': 'cluster_domain',
+                             'cluster_dns': 'cluster_dns'})
+
+    add_event(Dep(docker.name, 'run', 'success', calico_node.name, 'run'))
+    add_event(Dep(docker.name, 'run', 'success', kubelet.name, 'run'))
+    add_event(Dep(calico_node.name, 'run', 'success', kubelet.name, 'run'))
+    return kube_node
 
 
 def add_dashboard(args):
@@ -150,10 +157,10 @@ def deploy_k8s(args):
     setup_nodes(config, args.nodes)
 
     if args.dashboard:
-        add_dashboard()
+        add_dashboard(args)
 
     if args.dns:
-        add_dns()
+        add_dns(args)
 
 
 commands = {
