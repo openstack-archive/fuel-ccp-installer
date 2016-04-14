@@ -56,12 +56,12 @@ def setup_nodes(config, num=1):
     kube_nodes = []
     kubernetes_master = rs.load('kubelet-master')
     calico_master = rs.load('calico-master')
-    internal_network = IPAddress('10.0.0.0')
-    external_network = IPAddress(config.args['network'])
+    network = IPAddress('10.0.0.0')
+    internal_network = IPAddress(config.args['network'])
 
     kube_nodes = [
         setup_slave_node(config, kubernetes_master, calico_master,
-                         internal_network, external_network, i)
+                         network, internal_network, i)
         for i in xrange(num)]
 
     kube_master = rs.load('kube-node-master')
@@ -76,13 +76,13 @@ def setup_nodes(config, num=1):
 
 
 def setup_slave_node(config, kubernetes_master, calico_master,
-                     internal_network, external_network, i):
+                     network, internal_network, i):
     j = i + 1
     kube_node = cr.create(
         'kube-node-%d' % j,
         'k8s/node',
         {'name': 'kube-node-%d' % j,
-         'ip': str(internal_network + j + 3),
+         'ip': str(network + j + 3),
          'ssh_user': 'vagrant',
          'ssh_password': 'vagrant',
          'ssh_key': None}
@@ -92,7 +92,7 @@ def setup_slave_node(config, kubernetes_master, calico_master,
         'kube-node-%d-iface' % j,
         'k8s/virt_iface',
         {'name': 'cbr0',
-         'ipaddr': str(external_network + 256 * j + 1),
+         'ipaddr': str(internal_network + 256 * j + 1),
          'onboot': 'yes',
          'bootproto': 'static',
          'type': 'Bridge'})['kube-node-%d-iface' % j]
@@ -156,8 +156,8 @@ def add_node(args):
     config = rs.load('kube-config')
     kubernetes_master = rs.load('kubelet-master')
     calico_master = rs.load('calico-master')
-    internal_network = IPAddress('10.0.0.0')
-    external_network = IPAddress(config.args['network'])
+    network = IPAddress('10.0.0.0')
+    internal_network = IPAddress(config.args['network'])
 
     def get_node_id(n):
         return n.name.split('-')[-1]
@@ -168,7 +168,7 @@ def add_node(args):
     newest_id = int(get_node_id(max(kube_nodes, key=get_node_id)))
 
     new_nodes = [setup_slave_node(config, kubernetes_master, calico_master,
-                                  internal_network, external_network, i)
+                                  network, internal_network, i)
                  for i in xrange(newest_id, newest_id + args.nodes)]
 
     kube_master = rs.load('kube-node-master')
