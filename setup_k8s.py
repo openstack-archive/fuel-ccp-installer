@@ -50,6 +50,7 @@ def setup_master(config, user_config):
 
     kubelet = cr.create('kubelet-master',
                         'k8s/kubelet_master')['kubelet-master']
+    config.connect(kubelet, {'k8s_version': 'k8s_version'})
 
     calico = cr.create('calico-master', 'k8s/calico_master',
                        {'options': "--nat-outgoing --ipip"})['calico-master']
@@ -141,7 +142,8 @@ def setup_slave_node(config, user_config, kubernetes_master, calico_master,
     kube_node.connect(kubelet, {'name': 'kubelet_hostname'})
     kubernetes_master.connect(kubelet, {'master_address': 'master_api'})
     config.connect(kubelet, {'cluster_domain': 'cluster_domain',
-                             'cluster_dns': 'cluster_dns'})
+                             'cluster_dns': 'cluster_dns',
+                             'k8s_version': 'k8s_version'})
 
     add_event(Dep(docker.name, 'run', 'success', calico_node.name, 'run'))
     add_event(Dep(docker.name, 'run', 'success', kubelet.name, 'run'))

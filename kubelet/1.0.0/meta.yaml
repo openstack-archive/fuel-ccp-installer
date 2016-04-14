@@ -24,3 +24,6 @@ input:
   etcd_authority:
     schema: str
     value: ""
+  k8s_version:
+    schema: str!
+    value: ""
