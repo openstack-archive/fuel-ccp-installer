@@ -20,7 +20,7 @@ spec:
       ports:
       - name: clientport
         containerPort: 6666
-        hostPort: 6666
+        hostPort: {{etcd_port}}
       volumeMounts:
         - mountPath: /var/etcd
           name: varlibetcd
