@@ -35,3 +35,7 @@ input:
   prefix:
     schema: int
     value:
+  version:
+    schema: str!
+    value:
+

@@ -22,3 +22,6 @@ input:
   k8s_version:
     schema: str!
     value: v1.2.2
+  calico_version:
+    schema: str!
+    value: v0.18.0
