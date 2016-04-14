@@ -53,7 +53,8 @@ def setup_nodes(config, num=1):
     kube_nodes = []
     kubernetes_master = rs.load('kubelet-master')
     calico_master = rs.load('calico-master')
-    network = IPAddress(config.args['network'])
+    internal_network = IPAddress('10.0.0.0')
+    external_network = IPAddress(config.args['network'])
 
     for i in xrange(num):
         j = i + 1
@@ -61,7 +62,7 @@ def setup_nodes(config, num=1):
             'kube-node-%d' % j,
             'k8s/node',
             {'name': 'kube-node-%d' % j,
-             'ip': '10.0.0.%d' % (3 + j),
+             'ip': str(internal_network + j + 3),
              'ssh_user': 'vagrant',
              'ssh_password': 'vagrant',
              'ssh_key': None}
@@ -71,7 +72,7 @@ def setup_nodes(config, num=1):
             'kube-node-%d-iface' % j,
             'k8s/virt_iface',
             {'name': 'cbr0',
-             'ipaddr': str(network + 256 * j + 1),
+             'ipaddr': str(external_network + 256 * j + 1),
              'onboot': 'yes',
              'bootproto': 'static',
              'type': 'Bridge'})['kube-node-%d-iface' % j]
@@ -120,7 +121,7 @@ def setup_nodes(config, num=1):
             })
 
 
-def add_dashboard():
+def add_dashboard(args):
     kube_master = rs.load('kube-node-master')
     master = rs.load('kubelet-master')
     dashboard = cr.create('kubernetes-dashboard', 'k8s/dashboard', {})[0]
@@ -128,7 +129,7 @@ def add_dashboard():
     kube_master.connect(dashboard, {'ip': 'api_host'})
 
 
-def add_dns():
+def add_dns(args):
     config = rs.load('kube-config')
     kube_master = rs.load('kube-node-master')
     master = rs.load('kubelet-master')
@@ -139,16 +140,41 @@ def add_dns():
                               'cluster_dns': 'cluster_dns'})
 
 
-def deploy_k8s():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--nodes', type=int, default=1)
-
-    args = parser.parse_args()
-
+def deploy_k8s(args):
     config = create_config()
     setup_master(config)
     setup_nodes(config, args.nodes)
 
+    if args.dashboard:
+        add_dashboard()
+
+    if args.dns:
+        add_dns()
+
+
+commands = {
+    'deploy': deploy_k8s,
+    'dashboard': add_dashboard,
+    'dns': add_dns
+}
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('command', type=str, choices=commands.keys())
+    parser.add_argument('--nodes', type=int, default=1,
+                        help='Slave node count. Works with deploy only')
+    parser.add_argument('--dashboard', dest='dashboard', action='store_true',
+                        help='Add dashboard. Works with deploy only. Can be '
+                             ' done separately with `setup_k8s.py dashboard`')
+    parser.add_argument('--dns', dest='dns', action='store_true',
+                        help='Add dns. Works with deploy only. Can be done '
+                             'separately with `setup_k8s.py dns')
+    parser.set_defaults(dashboard=False, dns=False)
+
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
-    deploy_k8s()
+    args = get_args()
+    commands[args.command](args)
