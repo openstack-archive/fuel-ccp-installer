@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-from itertools import combinations
 
 from netaddr import IPAddress
 
 from solar.core.resource import composer as cr
 from solar.core.resource import resource as rs
-from solar.events.controls import Dep
-from solar.events.controls import React
 from solar.events.api import add_event
-
+from solar.events.controls import Dep
 
 
 def create_config():
@@ -21,26 +18,31 @@ def create_config():
 
 
 def setup_master(config):
-    master = cr.create('kube-node-master', 'k8s/node', {'name': 'kube-node-master',
-                                                        'ip': '10.0.0.3',
-                                                        'ssh_user': 'vagrant',
-                                                        'ssh_password': 'vagrant',
-                                                        'ssh_key': None})['kube-node-master']
+    master = cr.create('kube-node-master', 'k8s/node',
+                       {'name': 'kube-node-master',
+                        'ip': '10.0.0.3',
+                        'ssh_user': 'vagrant',
+                        'ssh_password': 'vagrant',
+                        'ssh_key': None})['kube-node-master']
 
     master.connect(config, {})
-    docker = cr.create('kube-docker-master', 'k8s/docker')['kube-docker-master']
+    docker = cr.create('kube-docker-master',
+                       'k8s/docker')['kube-docker-master']
     master.connect(docker, {})
 
-    kubelet = cr.create('kubelet-master', 'k8s/kubelet_master')['kubelet-master']
+    kubelet = cr.create('kubelet-master',
+                        'k8s/kubelet_master')['kubelet-master']
 
-    calico = cr.create('calico-master', 'k8s/calico_master', {'options': "--nat-outgoing --ipip"})['calico-master']
+    calico = cr.create('calico-master', 'k8s/calico_master',
+                       {'options': "--nat-outgoing --ipip"})['calico-master']
     master.connect(calico, {'ip': ['ip', 'etcd_host']})
     config.connect(calico, {'network': 'network',
                             'prefix': 'prefix'})
     calico.connect(calico, {'etcd_host': 'etcd_authority',
                             'etcd_port': 'etcd_authority',
                             'etcd_authority': 'etcd_authority_internal'})
-    config.connect(kubelet, {'service_cluster_ip_range': "service_cluster_ip_range"})
+    config.connect(kubelet,
+                   {'service_cluster_ip_range': "service_cluster_ip_range"})
     master.connect(kubelet, {'name': 'master_host'})
     kubelet.connect(kubelet, {'master_host': 'master_address',
                               'master_port': 'master_address'})
@@ -83,12 +85,14 @@ def setup_nodes(config, num=1):
         calico_node = cr.create('calico-node-%d' % j, 'k8s/calico', {})[0]
 
         kube_node.connect(calico_node, {'ip': 'ip'})
-        calico_master.connect(calico_node, {'etcd_authority': 'etcd_authority'})
+        calico_master.connect(calico_node,
+                              {'etcd_authority': 'etcd_authority'})
         calico_node.connect(calico_node, {
             'etcd_authority': 'etcd_authority_internal'
         })
         calico_cni = cr.create('calico-cni-node-%d' % j, 'k8s/cni', {})[0]
-        calico_node.connect(calico_cni, {'etcd_authority_internal': 'etcd_authority'})
+        calico_node.connect(calico_cni,
+                            {'etcd_authority_internal': 'etcd_authority'})
 
         docker = cr.create('kube-docker-%d' % j,
                            'k8s/docker')['kube-docker-%d' % j]
