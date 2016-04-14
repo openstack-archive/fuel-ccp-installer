@@ -31,3 +31,6 @@ input:
   admission_control:
     schema: str!
     value: NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ResourceQuota
+  k8s_version:
+    schema: str!
+    value: ""

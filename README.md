@@ -24,3 +24,12 @@ Vagrant setup:
 14. watch solar orch report
 15. vagrant ssh solar-dev1
 16. kubectl get pods (it works!)
+
+Kubernetes version change:
+1. log in to solar master node
+2. solar resource update kube-config k8s_version=v1.2.1
+3. solar changes stage
+4. solar changes process
+5. solar orch run-once
+6. watch solar orch report
+7. After a while, kubernetes will restart in desired version

@@ -19,3 +19,6 @@ input:
   service_cluster_ip_range:
     schema: str!
     value: 10.254.0.0/16
+  k8s_version:
+    schema: str!
+    value: v1.2.2
