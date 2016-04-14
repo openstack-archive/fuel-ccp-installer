@@ -16,10 +16,11 @@ Vagrant setup:
 5. vagrant up
 6. Copy, link or clone this repo to solar-dev VM into k8s folder
 8. solar repo import -l k8s
-9. ./setup-k8s.py
-10. solar changes stage
-11. solar changes process
-12. solar orch run-once
-13. watch solar orch report
-14. vagrant ssh solar-dev1
-15. kubectl get pods (it works!)
+9. cp config.yaml.sample config.yaml
+10. ./setup-k8s.py deploy
+11. solar changes stage
+12. solar changes process
+13. solar orch run-once
+14. watch solar orch report
+15. vagrant ssh solar-dev1
+16. kubectl get pods (it works!)
