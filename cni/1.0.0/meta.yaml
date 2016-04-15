@@ -10,3 +10,6 @@ input:
   log_level:
     schema: str!
     value: info
+  version:
+    schema: str!
+    value: v1.2.0
