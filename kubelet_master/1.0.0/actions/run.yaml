@@ -9,8 +9,8 @@
         dest: /usr/bin/kubelet{{k8s_version}}
     - file: name=/usr/bin/kubectl{{k8s_version}} mode=0777
     - file: name=/usr/bin/kubelet{{k8s_version}} mode=0777
-    - file: force=yes src=/usr/bin/kubectl{{k8s_version}} path=/usr/bin/kubectl state=link
-    - file: force=yes src=/usr/bin/kubelet{{k8s_version}} path=/usr/bin/kubelet state=link
+    - file: src=/usr/bin/kubectl{{k8s_version}} path=/usr/bin/kubectl state=link
+    - file: src=/usr/bin/kubelet{{k8s_version}} path=/usr/bin/kubelet state=link
     - file: name=/etc/kubernetes/manifests state=directory
     - template:
         src: {{templates_dir}}/kubelet.service
