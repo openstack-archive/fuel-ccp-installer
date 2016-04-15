@@ -4,11 +4,13 @@
     - file: name=/opt/cni/bin state=directory
     - get_url:
         url: https://github.com/projectcalico/calico-cni/releases/download/{{version}}/calico
-        dest: /opt/cni/bin/calico
+        dest: /opt/cni/bin/calico-{{version}}
     - get_url:
         url: https://github.com/projectcalico/calico-cni/releases/download/{{version}}/calico-ipam
-        dest: /opt/cni/bin/calico-ipam
-    - shell: chmod +x /opt/cni/bin/calico /opt/cni/bin/calico-ipam
+        dest: /opt/cni/bin/calico-ipam-{{version}}
+    - shell: chmod +x /opt/cni/bin/calico-{{version}} /opt/cni/bin/calico-ipam-{{version}}
+    - file: dest=/opt/cni/bin/calico-ipam src=/opt/cni/bin/calico-ipam-{{version}} state=link
+    - file: dest=/opt/cni/bin/calico src=/opt/cni/bin/calico-{{version}} state=link
     - file: name={{cni_netd}} state=directory
     - template:
         src: {{templates_dir}}/10-calico.conf

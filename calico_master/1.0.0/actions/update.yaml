@@ -3,9 +3,9 @@
   tasks:
     - get_url:
         url: https://github.com/Metaswitch/calico-docker/releases/download/{{version}}/calicoctl
-        dest: /tmp/calicoctl
-    - shell: chmod +x /tmp/calicoctl
-    - shell: sudo mv /tmp/calicoctl /usr/bin
+        dest: /usr/bin/calicoctl-{{version}}
+    - shell: chmod +x /usr/bin/calicoctl-{{version}}
+    - file: dest=/usr/bin/calicoctl src=/usr/bin/calicoctl-{{version}} state=link
     - template:
         src: {{templates_dir}}/calico-etcd.manifest
         dest: /etc/kubernetes/manifests/calico-etcd.manifest
