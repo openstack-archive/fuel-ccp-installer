@@ -120,9 +120,9 @@ def setup_slave_node(config, user_config, kubernetes_master, calico_master,
 
     calico_node = cr.create('calico-node-%d' % j, 'k8s/calico', {})[0]
 
+    kube_node.connect(calico_node, {'ip': 'ip'})
     config.connect(calico_node, {'calico_version': 'version'})
 
-    kube_node.connect(calico_node, {'ip': 'ip'})
     calico_master.connect(calico_node,
                           {'etcd_authority': 'etcd_authority'})
     calico_node.connect(calico_node, {
