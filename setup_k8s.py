@@ -32,7 +32,7 @@ def get_free_slave_ip(available_ips):
         raise ValueError('No free IP addresses available. '
                          'Did you edit config.yaml?')
 
-    return list(sorted(free_ips))[0]
+    return sorted(free_ips)[0]
 
 
 def setup_master(config, user_config):
