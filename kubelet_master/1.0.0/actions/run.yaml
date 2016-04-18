@@ -20,7 +20,7 @@
         dest: /etc/kubernetes/manifests/kubelet_master.manifest
     - service: name=kubelet state=restarted enabled=yes
     - wait_for: host={{master_host}} port={{master_port}} connect_timeout=5 state=started timeout=300
-    - shell: kubectl get namespaces
+    - shell: kubectl --server {{master_address}} get namespaces
       register: kube_namespaces
-    - shell: kubectl create namespace kube-system
+    - shell: kubectl --server {{master_address}} create namespace kube-system
       when: "'kube-system' not in kube_namespaces.stdout"
