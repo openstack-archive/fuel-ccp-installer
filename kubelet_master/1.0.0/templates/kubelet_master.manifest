@@ -44,12 +44,14 @@ spec:
         - apiserver
         - --allow-privileged=true
         - --insecure-bind-address=0.0.0.0
+        - --insecure-port={{master_port}}
         - --etcd-servers=http://127.0.0.1:2379
+        - --secure-port=0
         - --service-cluster-ip-range={{service_cluster_ip_range}}
         - --admission-control={{admission_control}}
         - --logtostderr=true
       ports:
-        - containerPort: 8080
+        - containerPort: {{master_port}}
           hostPort: {{master_port}}
           name: local
       volumeMounts:
