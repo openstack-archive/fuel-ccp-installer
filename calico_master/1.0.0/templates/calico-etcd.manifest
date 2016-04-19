@@ -12,14 +12,14 @@ spec:
         - "/usr/local/bin/etcd"
         - "--name=calico-etcd"
         - "--data-dir=/var/etcd"
-        - "--advertise-client-urls=http://{{ip}}:6666"
-        - "--listen-client-urls=http://0.0.0.0:6666"
+        - "--advertise-client-urls=http://{{ip}}:{{etcd_port}}"
+        - "--listen-client-urls=http://0.0.0.0:{{etcd_port}}"
         - "--listen-peer-urls=http://0.0.0.0:6660"
       securityContext:
         privileged: true
       ports:
       - name: clientport
-        containerPort: 6666
+        containerPort: {{etcd_port}}
         hostPort: {{etcd_port}}
       volumeMounts:
         - mountPath: /var/etcd
