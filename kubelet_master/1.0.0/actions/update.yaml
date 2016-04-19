@@ -18,6 +18,7 @@
     - template:
         src: {{templates_dir}}/kubelet_master.manifest
         dest: /etc/kubernetes/manifests/kubelet_master.manifest
+    - shell: systemctl daemon-reload
     - service: name=kubelet state=restarted enabled=yes
     - wait_for: host={{master_host}} port={{master_port}} connect_timeout=5 state=started timeout=60
     - shell: kubectl --server {{master_address}} get namespaces

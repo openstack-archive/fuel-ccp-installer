@@ -15,6 +15,7 @@
     # wait for docker images ... mostly
     # TODO(jnowak): fix it by pulling image in advance
     - wait_for: host=0.0.0.0 port={{etcd_port}} connect_timeout=5 state=started timeout=300
+    - shell: systemctl daemon-reload
     - service: name=calico-node.service enabled=yes state=restarted
     {% if options %}
     - shell: ETCD_AUTHORITY={{etcd_authority_internal}} calicoctl pool add {{network}}/{{prefix}} {{options}}
