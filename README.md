@@ -1,5 +1,7 @@
 This repository contains resources for configuring kubernetes with calico networking plugin using Solar.
 
+Recommended solar version is `git checkout 1a33a7306d1485f503de967531c87a3b3aff5fcb`.
+
 Vagrant setup:
 
 1. Clone [solar](https://github.com/openstack/solar)
