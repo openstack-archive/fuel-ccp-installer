@@ -3,13 +3,10 @@
 
 slaves_count: 0
 slaves_ram: 1024
-master_image: solar-master
+master_image: solar-project/solar-master
 master_image_version: null
 slaves_image: fc23
 slaves_image_version: null
-docker_master_image: solar-project/solar-master
-docker_slaves_image: solar-project/solar-master
-docker_cmd: "/sbin/init"
 master_ram: 1024
 master_cpus: 1
 master_ips:
