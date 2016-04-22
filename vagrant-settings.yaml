@@ -1,0 +1,45 @@
+# copy it to vagrant-settings.yaml then Vagrantfile
+# will use values from this file
+
+slaves_count: 2
+slaves_ram: 1024
+master_image: solar-master
+master_image_version: null
+slaves_image: fc23
+slaves_image_version: null
+docker_master_image: solar-project/solar-master
+docker_slaves_image: solar-project/solar-master
+docker_cmd: "/sbin/init"
+master_ram: 1024
+master_cpus: 1
+master_ips:
+  - 10.0.0.2
+  - 10.1.0.2
+  - 10.2.0.2
+slaves_cpus: 1
+slaves_ips:
+  - 10.0.0.
+  - 10.1.0.
+  - 10.2.0.
+
+# if you have virtualbox 5.x then enable it
+# if will speedup things a lot
+# paravirtprovider: kvm
+
+# By default Virtualbox shared folder is used which is very slow
+# Uncomment following option to change it.
+# Possible options are: rsync, nfs
+# sync_type: nfs
+
+# Use vagrant image in order to perform provisioning
+preprovisioned: true
+
+# Use pxe bootstrap in order to bootstrap nodes
+# it should be used in order to provision nodes
+# by solar
+# preprovisioned: false
+
+
+# needed for starting / preparing db server
+# you can choose from riak | postgresql
+solar_db_backend: riak
