@@ -5,12 +5,13 @@ Recommended solar version is `git checkout 1a33a7306d1485f503de967531c87a3b3aff5
 Express Vagrant setup:
 
 1. Clone this repo and cd to it
-2. Add fc23 vagrant box:
+2. Download Fedora-Cloud-Base-Vagrant-23-20151030.x86_64.vagrant image for Virtualbox or Libvirt from https://dl.fedoraproject.org/pub/fedora/linux/releases/23/Cloud/x86_64/Images/
+3. Add fc23 vagrant box:
 	* libvirt: `vagrant box add fc23 Fedora-Cloud-Base-Vagrant-23-20151030.x86_64.vagrant-libvirt.box --provider libvirt  --force`
 	* virtualbox: `vagrant box add fc23 Fedora-Cloud-Base-Vagrant-23-20151030.x86_64.vagrant-virtualbox.box --provider virtualbox --force`
-3. `./deploy/kube-up.sh`
-4. `vagrant ssh solar-dev1`
-5. `kubectl get pods`
+4. `./deploy/kube-up.sh`
+5. `vagrant ssh solar-dev1`
+6. `kubectl get pods`
 
 In config.yaml you can set:
 - login data for kubernetes master
