@@ -180,7 +180,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           rsync__args: ["--verbose", "--archive", "--delete", "-z"]
         end
       end
-      config.vm.provision "shell", inline: "sudo /usr/sbin/setenforce 0"
     end
   end
 
