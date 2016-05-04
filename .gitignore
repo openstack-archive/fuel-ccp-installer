@@ -1,1 +1,7 @@
 config.yaml
+.vagrant
+.solar_cli_uids
+deploy/solar
+solar-k8s-modules
+tmp
+solar-resources
