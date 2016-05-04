@@ -1,4 +1,5 @@
 config.yaml
+vagrant-settings.yaml
 .vagrant
 .solar_cli_uids
 deploy/solar
