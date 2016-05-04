@@ -1,21 +1,30 @@
 #! /bin/bash
-export SOLAR_CONFIG_OVERRIDE="/.solar_config_override"
-sudo pip install netaddr
-sudo pip install -I zmq
 
-wget https://storage.googleapis.com/kubernetes-release/release/v1.2.2/bin/linux/amd64/kubectl
-chmod +x kubectl
-sudo mv kubectl /usr/local/bin/kubectl
+# set -xe
+
+export SOLAR_CONFIG_OVERRIDE="/.solar_config_override"
+
+# install kubectl if not exists
+if ! type "kubectl" > /dev/null; then
+    wget https://storage.googleapis.com/kubernetes-release/release/v1.2.2/bin/linux/amd64/kubectl
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin/kubectl
+fi
 
 pushd ~
-mkdir .kube
-cp /vagrant/kube-config .kube/config
-git clone https://github.com/pigmej/pykube.git
-sudo pip install -I pykube
-sudo start solar-worker
+if [ ! -d ".kube" ]; then
+   mkdir .kube
+   cp /vagrant/kube-config .kube/config
+fi
+
+# solar-resources stuff
+git clone https://github.com/openstack/solar-resources
+solar repo import -l solar-resources/resources -n resources
+solar repo import -l solar-resources/templates -n templates
 
 pushd /vagrant
-solar repo import -l . --name k8s
+sudo pip install -r requirements.txt
+solar repo import -l resources --name k8s
 cp config.yaml.sample config.yaml
 ./setup_k8s.py deploy
 ./setup_k8s.py dns
