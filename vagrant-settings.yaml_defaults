@@ -1,14 +1,14 @@
 # copy it to vagrant-settings.yaml then Vagrantfile
 # will use values from this file
 
-slaves_count: 0
-slaves_ram: 1024
-master_image: solar-project/solar-master
+master_image: solar-project/solar-minimal
 master_image_version: null
-slaves_image: fc23
-slaves_image_version: null
-master_ram: 1024
+master_ram: 512
 master_cpus: 1
+slaves_ram: 1024
+slaves_count: 2
+slaves_image: yk0/ubuntu-xenial
+slaves_image_version: null
 master_ips:
   - 10.0.0.2
   - 10.1.0.2
@@ -27,16 +27,3 @@ slaves_ips:
 # Uncomment following option to change it.
 # Possible options are: rsync, nfs
 # sync_type: nfs
-
-# Use vagrant image in order to perform provisioning
-preprovisioned: true
-
-# Use pxe bootstrap in order to bootstrap nodes
-# it should be used in order to provision nodes
-# by solar
-# preprovisioned: false
-
-
-# needed for starting / preparing db server
-# you can choose from riak | postgresql
-solar_db_backend: riak
