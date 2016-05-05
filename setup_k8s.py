@@ -12,21 +12,8 @@ from solar.events.api import add_event
 from solar.events.controls import Dep
 
 
-MASTER_NODE_RESOURCE_NAME_FILENAME = 'k8s-master.txt'
-MASTER_NODE_RESOURCE_NAME = 'kube-node-master'
-
-
-def get_master_node_name():
-    try:
-        with open(MASTER_NODE_RESOURCE_NAME_FILENAME, 'r') as f:
-            return f.read()
-    except IOError:
-        return MASTER_NODE_RESOURCE_NAME
-
-
-def save_master_node_name(name):
-    with open(MASTER_NODE_RESOURCE_NAME_FILENAME, 'w') as f:
-        f.write(name)
+DEFAULT_MASTER_NODE_RESOURCE_NAME = 'kube-node-master'
+MASTER_NODE_RESOURCE_NAME = None
 
 
 def create_config(dns_config):
@@ -55,9 +42,8 @@ def get_free_slave_ip(available_ips):
 def setup_master(config, user_config, existing_node):
     if existing_node:
         master = existing_node
-        save_master_node_name(master.name)
     else:
-        master = cr.create(get_master_node_name(), 'k8s/node',
+        master = cr.create(MASTER_NODE_RESOURCE_NAME, 'k8s/node',
                            {'name': 'kube-node-master',
                             'ip': user_config['ip'],
                             'ssh_user': user_config['username'],
@@ -110,7 +96,7 @@ def setup_nodes(config, user_config, num=1, existing_nodes=None):
                              calico_master, internal_network, i)
             for i in xrange(num)]
 
-    kube_master = rs.load(get_master_node_name())
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     all_nodes = kube_nodes[:] + [kube_master]
     hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
@@ -186,7 +172,7 @@ def setup_slave_node(config, user_config, kubernetes_master, calico_master,
 
 
 def add_dashboard(args, *_):
-    kube_master = rs.load(get_master_node_name())
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     master = rs.load('kubelet-master')
     dashboard = cr.create('kubernetes-dashboard', 'k8s/dashboard', {})[0]
     master.connect(dashboard, {'master_port': 'api_port'})
@@ -195,7 +181,7 @@ def add_dashboard(args, *_):
 
 def add_dns(args, *_):
     config = rs.load('kube-config')
-    kube_master = rs.load(get_master_node_name())
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     master = rs.load('kubelet-master')
     kube_dns = cr.create('kube-dns', 'k8s/kubedns', {})[0]
     master.connect(kube_dns, {'master_port': 'api_port'})
@@ -221,7 +207,7 @@ def add_node(args, user_config):
                                   internal_network, i)
                  for i in xrange(newest_id, newest_id + args.nodes)]
 
-    kube_master = rs.load(get_master_node_name())
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     all_nodes = new_nodes[:] + [kube_master]
     hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
@@ -232,11 +218,19 @@ def add_node(args, user_config):
             })
 
 
+def get_master_and_slave_nodes():
+    nodes = sorted(rs.load_all(startswith='node'),
+                   key=lambda x: x.name)
+    # We are using existing nodes only if there are 2 or more of them. One
+    # created node will result in all resources being created from scratch.
+    if len(nodes) >= 2:
+        return (nodes[0], nodes[1:])
+    else:
+        return (None, None)
+
+
 def deploy_k8s(args, user_config):
-    existing_nodes = rs.load_all(startswith='node')
-    master_node, slave_nodes = None, None
-    if existing_nodes:
-        master_node, slave_nodes = existing_nodes[0], existing_nodes[1:]
+    master_node, slave_nodes = get_master_and_slave_nodes()
 
     config = create_config(user_config['dns'])
 
@@ -280,7 +274,18 @@ def get_user_config():
         return yaml.load(conf)
 
 
+def setup_master_node_name():
+    global MASTER_NODE_RESOURCE_NAME
+
+    master, _ = get_master_and_slave_nodes()
+    if master is not None:
+        MASTER_NODE_RESOURCE_NAME = master.name
+    else:
+        MASTER_NODE_RESOURCE_NAME = DEFAULT_MASTER_NODE_RESOURCE_NAME
+
+
 if __name__ == "__main__":
     args = get_args()
     user_config = get_user_config()
+    setup_master_node_name()
     commands[args.command](args, user_config)
