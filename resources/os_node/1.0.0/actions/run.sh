@@ -1,6 +1,6 @@
-os = $("lsb_release -si")
+os=`lsb_release -si`
 
-if [[ "$os" == "Fedora" ]]
+if [[ ! "$os" == "Ubuntu" ]]
 then
    sudo dnf install -y python python-dnf ansible libselinux-python
    sudo /usr/sbin/setenforce 0

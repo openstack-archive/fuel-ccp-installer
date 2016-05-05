@@ -2,10 +2,19 @@
   become: yes
   tasks:
     - package: name=docker state=present enablerepo=updates-testing
+      when: ansible_distribution == "Fedora"
+    - package: name=docker.io state=present
+      when: ansible_distribution == "Ubuntu"
     {% if network_options %}
     - lineinfile:
         dest: /etc/sysconfig/docker-network
         regexp: "DOCKER_NETWORK_OPTIONS=.*"
         line: DOCKER_NETWORK_OPTIONS="--bridge={{iface}} --iptables=false --ip-masq=false"
+        when: ansible_distribution == "Fedora"
+    - lineinfile:
+        dest: /etc/defaults
+        regexp: "DOCKER_OPTS=.*"
+        line: DOCKER_OPTS="--bridge={{iface}} --iptables=false --ip-masq=false"
+        when: ansible_distribution == "Ubuntu"
     {% endif %}
     - service: name=docker.service enabled=yes state=restarted
