@@ -11,16 +11,13 @@ from solar.core.resource import resource as rs
 from solar.events.api import add_event
 from solar.events.controls import Dep
 
-
 DEFAULT_MASTER_NODE_RESOURCE_NAME = 'kube-node-master'
 MASTER_NODE_RESOURCE_NAME = None
 
 
-def create_config(dns_config):
+def create_config(global_config):
     return cr.create('kube-config', 'k8s/global_config',
-                     {'cluster_dns': dns_config['ip'],
-                      'cluster_domain': dns_config['domain']}
-                     )[0]
+                     global_config)[0]
 
 
 def get_slave_nodes():
@@ -233,7 +230,7 @@ def get_master_and_slave_nodes():
 def deploy_k8s(args, user_config):
     master_node, slave_nodes = get_master_and_slave_nodes()
 
-    config = create_config(user_config['dns'])
+    config = create_config(user_config['global_config'])
 
     setup_master(config, user_config['kube_master'], master_node)
     setup_nodes(config, user_config['kube_slaves']['slaves'],
