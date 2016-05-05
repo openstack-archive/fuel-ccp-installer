@@ -87,12 +87,12 @@ def setup_nodes(config, user_config, num=1, existing_nodes=None):
 
     if existing_nodes:
         kube_nodes = [
-            setup_slave_node(config, user_config, kubernetes_master,
+            setup_slave_node(config, user_config[i], kubernetes_master,
                              calico_master, internal_network, i, node)
             for (i, node) in enumerate(existing_nodes)]
     else:
         kube_nodes = [
-            setup_slave_node(config, user_config, kubernetes_master,
+            setup_slave_node(config, user_config[i], kubernetes_master,
                              calico_master, internal_network, i)
             for i in xrange(num)]
 
@@ -117,7 +117,7 @@ def setup_slave_node(config, user_config, kubernetes_master, calico_master,
             'kube-node-%d' % j,
             'k8s/node',
             {'name': 'kube-node-%d' % j,
-             'ip': get_free_slave_ip(user_config['ips']),
+             'ip': user_config['ip'],
              'ssh_user': user_config['username'],
              'ssh_password': user_config['password'],
              'ssh_key': user_config['ssh_key']}
@@ -202,7 +202,8 @@ def add_node(args, user_config):
     kube_nodes = get_slave_nodes()
     newest_id = int(get_node_id(max(kube_nodes, key=get_node_id)))
 
-    new_nodes = [setup_slave_node(config, user_config['kube_slaves'],
+    new_nodes = [setup_slave_node(config,
+                                  user_config['kube_slaves']['slaves'][i],
                                   kubernetes_master, calico_master,
                                   internal_network, i)
                  for i in xrange(newest_id, newest_id + args.nodes)]
@@ -235,7 +236,8 @@ def deploy_k8s(args, user_config):
     config = create_config(user_config['dns'])
 
     setup_master(config, user_config['kube_master'], master_node)
-    setup_nodes(config, user_config['kube_slaves'], args.nodes, slave_nodes)
+    setup_nodes(config, user_config['kube_slaves']['slaves'],
+                args.nodes, slave_nodes)
 
     if args.dashboard:
         add_dashboard(args)
@@ -252,12 +254,16 @@ commands = {
 }
 
 
-def get_args():
+def get_args(user_config):
     parser = argparse.ArgumentParser()
     parser.add_argument('command', type=str, choices=commands.keys())
-    parser.add_argument('--nodes', type=int, default=1,
+    parser.add_argument('--nodes', type=int,
+                        default=len(user_config['kube_slaves']['slaves']),
                         help='Slave node count. Works with deploy and '
-                        'add-node')
+                        'add-node. WARNING - this parameter does not work if '
+                        'you have already created Solar node resources. This '
+                        'script will make use of all your previously created '
+                        'Solar nodes if their count is bigger than 1.')
     parser.add_argument('--dashboard', dest='dashboard', action='store_true',
                         help='Add dashboard. Works with deploy only. Can be '
                              ' done separately with `setup_k8s.py dashboard`')
@@ -271,7 +277,14 @@ def get_args():
 
 def get_user_config():
     with open('config.yaml') as conf:
-        return yaml.load(conf)
+        config = yaml.load(conf)
+
+    for slave in config['kube_slaves']['slaves']:
+        for key, value in config['kube_slaves']['default'].iteritems():
+            if key not in slave:
+                slave[key] = value
+
+    return config
 
 
 def setup_master_node_name():
@@ -285,7 +298,7 @@ def setup_master_node_name():
 
 
 if __name__ == "__main__":
-    args = get_args()
     user_config = get_user_config()
+    args = get_args(user_config)
     setup_master_node_name()
     commands[args.command](args, user_config)
