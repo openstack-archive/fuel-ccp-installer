@@ -1,7 +1,7 @@
 - hosts: [{{host}}]
   become: yes
   tasks:
-    - dnf: name=bridge-utils state=present
+    - package: name=bridge-utils state=present
     - template:
         src: {{templates_dir}}/ifcfg
         dest: /etc/sysconfig/network-scripts/ifcfg-{{name}}

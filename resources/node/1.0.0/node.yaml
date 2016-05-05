@@ -26,7 +26,7 @@ resources:
           port: rsync_node_#{name}#::port
           password: rsync_node_#{name}#::password
   - id: '#{name}#'
-    from: k8s/fedora_cloud_base
+    from: k8s/os_node
     input:
       name: '#{name}#'
       ip: '#{ip}#'
