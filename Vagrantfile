@@ -147,13 +147,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         libvirt.disk_bus = "virtio"
       end
 
-      if SYNC_TYPE == 'nfs'
-        config.vm.synced_folder ".", "/vagrant", type: "nfs"
-      end
-      if SYNC_TYPE == 'rsync'
-        config.vm.synced_folder ".", "/vagrant", type: "rsync",
-          rsync__args: ["--verbose", "--archive", "--delete", "-z"]
-      end
+      config.vm.synced_folder ".", "/vagrant", disabled: true
+      # if SYNC_TYPE == 'nfs'
+      #   config.vm.synced_folder ".", "/vagrant", type: "nfs"
+      # end
+      # if SYNC_TYPE == 'rsync'
+      #   config.vm.synced_folder ".", "/vagrant", type: "rsync",
+      #     rsync__args: ["--verbose", "--archive", "--delete", "-z"]
+      # end
     end
   end
 

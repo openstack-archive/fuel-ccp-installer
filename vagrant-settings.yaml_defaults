@@ -3,10 +3,13 @@
 
 master_image: solar-project/solar-minimal
 master_image_version: null
-master_ram: 512
+# 256 is enough, can be trimed down when needed
+master_ram: 350
 master_cpus: 1
 slaves_ram: 1024
-slaves_count: 2
+slaves_count: 1
+# you can select between
+# yk0/ubuntu-xenial OR fc23
 slaves_image: yk0/ubuntu-xenial
 slaves_image_version: null
 master_ips:
