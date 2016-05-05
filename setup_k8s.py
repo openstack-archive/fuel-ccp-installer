@@ -12,6 +12,23 @@ from solar.events.api import add_event
 from solar.events.controls import Dep
 
 
+MASTER_NODE_RESOURCE_NAME_FILENAME = 'k8s-master.txt'
+MASTER_NODE_RESOURCE_NAME = 'kube-node-master'
+
+
+def get_master_node_name():
+    try:
+        with open(MASTER_NODE_RESOURCE_NAME_FILENAME, 'r') as f:
+            return f.read()
+    except IOError:
+        return MASTER_NODE_RESOURCE_NAME
+
+
+def save_master_node_name(name):
+    with open(MASTER_NODE_RESOURCE_NAME_FILENAME, 'w') as f:
+        f.write(name)
+
+
 def create_config(dns_config):
     return cr.create('kube-config', 'k8s/global_config',
                      {'cluster_dns': dns_config['ip'],
@@ -35,13 +52,18 @@ def get_free_slave_ip(available_ips):
     return sorted(free_ips)[0]
 
 
-def setup_master(config, user_config):
-    master = cr.create('kube-node-master', 'k8s/node',
-                       {'name': 'kube-node-master',
-                        'ip': user_config['ip'],
-                        'ssh_user': user_config['username'],
-                        'ssh_password': user_config['password'],
-                        'ssh_key': user_config['ssh_key']})['kube-node-master']
+def setup_master(config, user_config, existing_node):
+    if existing_node:
+        master = existing_node
+        save_master_node_name(master.name)
+    else:
+        master = cr.create(get_master_node_name(), 'k8s/node',
+                           {'name': 'kube-node-master',
+                            'ip': user_config['ip'],
+                            'ssh_user': user_config['username'],
+                            'ssh_password': user_config['password'],
+                            'ssh_key': user_config['ssh_key']}
+                           )['kube-node-master']
 
     master.connect(config, {})
     docker = cr.create('kube-docker-master',
@@ -71,20 +93,26 @@ def setup_master(config, user_config):
     add_event(Dep(kubelet.name, 'run', 'success', calico.name, 'run'))
 
 
-def setup_nodes(config, user_config, num=1):
+def setup_nodes(config, user_config, num=1, existing_nodes=None):
     kube_nodes = []
     kubernetes_master = rs.load('kubelet-master')
     calico_master = rs.load('calico-master')
     internal_network = IPAddress(config.args['network'])
 
-    kube_nodes = [
-        setup_slave_node(config, user_config, kubernetes_master, calico_master,
-                         internal_network, i)
-        for i in xrange(num)]
+    if existing_nodes:
+        kube_nodes = [
+            setup_slave_node(config, user_config, kubernetes_master,
+                             calico_master, internal_network, i, node)
+            for (i, node) in enumerate(existing_nodes)]
+    else:
+        kube_nodes = [
+            setup_slave_node(config, user_config, kubernetes_master,
+                             calico_master, internal_network, i)
+            for i in xrange(num)]
 
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(get_master_node_name())
     all_nodes = kube_nodes[:] + [kube_master]
-    hosts_files = rs.load_all(startswith='hosts_file_node_kube-')
+    hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
         for host_file in hosts_files:
             node.connect(host_file, {
@@ -94,17 +122,20 @@ def setup_nodes(config, user_config, num=1):
 
 
 def setup_slave_node(config, user_config, kubernetes_master, calico_master,
-                     internal_network, i):
+                     internal_network, i, existing_node=None):
     j = i + 1
-    kube_node = cr.create(
-        'kube-node-%d' % j,
-        'k8s/node',
-        {'name': 'kube-node-%d' % j,
-         'ip': get_free_slave_ip(user_config['ips']),
-         'ssh_user': user_config['username'],
-         'ssh_password': user_config['password'],
-         'ssh_key': user_config['ssh_key']}
-    )['kube-node-%d' % j]
+    if existing_node:
+        kube_node = existing_node
+    else:
+        kube_node = cr.create(
+            'kube-node-%d' % j,
+            'k8s/node',
+            {'name': 'kube-node-%d' % j,
+             'ip': get_free_slave_ip(user_config['ips']),
+             'ssh_user': user_config['username'],
+             'ssh_password': user_config['password'],
+             'ssh_key': user_config['ssh_key']}
+        )['kube-node-%d' % j]
 
     iface_node = cr.create(
         'kube-node-%d-iface' % j,
@@ -155,7 +186,7 @@ def setup_slave_node(config, user_config, kubernetes_master, calico_master,
 
 
 def add_dashboard(args, *_):
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(get_master_node_name())
     master = rs.load('kubelet-master')
     dashboard = cr.create('kubernetes-dashboard', 'k8s/dashboard', {})[0]
     master.connect(dashboard, {'master_port': 'api_port'})
@@ -164,7 +195,7 @@ def add_dashboard(args, *_):
 
 def add_dns(args, *_):
     config = rs.load('kube-config')
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(get_master_node_name())
     master = rs.load('kubelet-master')
     kube_dns = cr.create('kube-dns', 'k8s/kubedns', {})[0]
     master.connect(kube_dns, {'master_port': 'api_port'})
@@ -190,9 +221,9 @@ def add_node(args, user_config):
                                   internal_network, i)
                  for i in xrange(newest_id, newest_id + args.nodes)]
 
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(get_master_node_name())
     all_nodes = new_nodes[:] + [kube_master]
-    hosts_files = rs.load_all(startswith='hosts_file_node_kube-')
+    hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
         for host_file in hosts_files:
             node.connect(host_file, {
@@ -202,9 +233,15 @@ def add_node(args, user_config):
 
 
 def deploy_k8s(args, user_config):
+    existing_nodes = rs.load_all(startswith='node')
+    master_node, slave_nodes = None, None
+    if existing_nodes:
+        master_node, slave_nodes = existing_nodes[0], existing_nodes[1:]
+
     config = create_config(user_config['dns'])
-    setup_master(config, user_config['kube_master'])
-    setup_nodes(config, user_config['kube_slaves'], args.nodes)
+
+    setup_master(config, user_config['kube_master'], master_node)
+    setup_nodes(config, user_config['kube_slaves'], args.nodes, slave_nodes)
 
     if args.dashboard:
         add_dashboard(args)
