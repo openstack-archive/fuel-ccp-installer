@@ -7,7 +7,7 @@ master_image_version: null
 master_ram: 350
 master_cpus: 1
 slaves_ram: 1024
-slaves_count: 1
+slaves_count: 2
 # you can select between
 # yk0/ubuntu-xenial OR fc23
 slaves_image: yk0/ubuntu-xenial
