@@ -50,19 +50,12 @@ def shell_script(filename, env=[], args=[])
   "/bin/bash -c \"#{env.join ' '} #{filename} #{args.join ' '} \""
 end
 
-# solar_script = ansible_playbook_command("solar.yaml")
-
-# master_pxe = ansible_playbook_command("pxe.yaml")
-# get_solar = shell_script("/vagrant/deploy/get-solar.sh")
-
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "solar", primary: true do |config|
     config.vm.box = MASTER_IMAGE
     config.vm.box_version = MASTER_IMAGE_VERSION
 
-    # config.vm.provision "shell", inline: get_solar
-    # config.vm.provision "shell", inline: solar_script, privileged: true, env: {"SOLAR_DB_BACKEND": SOLAR_DB_BACKEND}
     config.vm.provision "file", source: "~/.vagrant.d/insecure_private_key", destination: "/vagrant/tmp/keys/ssh_private"
     config.vm.host_name = "solar"
 
