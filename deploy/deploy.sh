@@ -26,8 +26,8 @@ pushd /vagrant
 sudo pip install -r requirements.txt
 solar repo import -l resources --name k8s
 cp config.yaml.sample config.yaml
-./setup_k8s.py deploy
-./setup_k8s.py dns
+./mcpinstall.py deploy
+./mcpinstall.py dns
 solar changes stage
 solar changes process
 solar orch run-once -w 1200
