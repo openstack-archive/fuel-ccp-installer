@@ -50,6 +50,10 @@ def shell_script(filename, env=[], args=[])
   "/bin/bash -c \"#{env.join ' '} #{filename} #{args.join ' '} \""
 end
 
+if not SYNC_TYPE
+  SYNC_TYPE = "rsync"
+end
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "solar", primary: true do |config|
@@ -85,10 +89,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
 
     if SYNC_TYPE == 'nfs'
-      config.vm.synced_folder ".", "/vagrant", type: "nfs"
+      config.vm.synced_folder "../../", "/vagrant", type: "nfs"
     end
     if SYNC_TYPE == 'rsync'
-      config.vm.synced_folder ".", "/vagrant", type: "rsync",
+      config.vm.synced_folder "../../", "/vagrant", type: "rsync",
         rsync__args: ["--verbose", "--archive", "--delete", "-z"]
     end
 
