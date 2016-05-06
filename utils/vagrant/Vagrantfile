@@ -25,7 +25,11 @@ VAGRANTFILE_API_VERSION = "2"
 defaults_cfg = YAML.load_file('vagrant-settings.yaml_defaults')
 if File.exist?('vagrant-settings.yaml')
   custom_cfg = YAML.load_file('vagrant-settings.yaml')
-  cfg = defaults_cfg.merge(custom_cfg)
+  if custom_cfg
+    cfg = defaults_cfg.merge(custom_cfg)
+  else
+    cfg = defaults_cfg
+  end
 else
   cfg = defaults_cfg
 end

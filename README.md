@@ -4,10 +4,11 @@ Express Vagrant setup:
 ---------------------
 
 1. `git clone -b stable https://github.com/pigmej/mcpinstall.git && cd mcpinstall`
-2. Copy default vagrant settings: `cp utils/vagrant/vagrant-settings.yaml_defaults utils/vagrant/vagrant-settings.yaml`
-3. `./deploy/kube-up.sh`
-4. `vagrant ssh solar`
-5. `kubectl get pods`
+2. `./deploy/kube-up.sh`
+3. `vagrant ssh solar`
+4. `kubectl get pods`
+
+You can adjust any setting value from `utils/vagrant/vagrant-settings.yaml_defaults` by setting it in `utils/vagrant/vagrant-settings.yaml`. For example on Linux you should consider setting `sync_type` to `nfs` by adding `sync_type: nfs` to your vagrant-settings.yaml.
 
 Fedora slave nodes:
 -------------------
