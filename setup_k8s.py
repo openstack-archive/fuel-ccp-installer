@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 import re
 
 from netaddr import IPAddress
@@ -14,6 +15,8 @@ from solar.events.controls import Dep
 
 DEFAULT_MASTER_NODE_RESOURCE_NAME = 'kube-node-master'
 MASTER_NODE_RESOURCE_NAME = None
+CONFIG_NAME = 'config.yaml'
+DEFAULT_CONFIG_NAME = 'config.yaml.sample'
 
 
 def create_config(dns_config):
@@ -87,13 +90,13 @@ def setup_nodes(config, user_config, num=1, existing_nodes=None):
 
     if existing_nodes:
         kube_nodes = [
-            setup_slave_node(config, user_config[i], kubernetes_master,
-                             calico_master, internal_network, i, node)
+            setup_slave_node(config, kubernetes_master,
+                             calico_master, internal_network, i, None, node)
             for (i, node) in enumerate(existing_nodes)]
     else:
         kube_nodes = [
-            setup_slave_node(config, user_config[i], kubernetes_master,
-                             calico_master, internal_network, i)
+            setup_slave_node(config, kubernetes_master,
+                             calico_master, internal_network, i, user_config[i])
             for i in xrange(num)]
 
     kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
@@ -107,8 +110,8 @@ def setup_nodes(config, user_config, num=1, existing_nodes=None):
             })
 
 
-def setup_slave_node(config, user_config, kubernetes_master, calico_master,
-                     internal_network, i, existing_node=None):
+def setup_slave_node(config, kubernetes_master, calico_master,
+                     internal_network, i, user_config=None, existing_node=None):
     j = i + 1
     if existing_node:
         kube_node = existing_node
@@ -276,8 +279,18 @@ def get_args(user_config):
 
 
 def get_user_config():
-    with open('config.yaml') as conf:
-        config = yaml.load(conf)
+    global CONFIG_NAME
+    global DEFAULT_CONFIG_NAME
+
+    if os.path.exists(CONFIG_NAME):
+        with open(CONFIG_NAME) as conf:
+            config = yaml.load(conf)
+    elif os.path.exists(DEFAULT_CONFIG_NAME):
+        with open(DEFAULT_CONFIG_NAME) as conf:
+            config = yaml.load(conf)
+    else:
+        raise Exception('{0} and {1} configuration files not found'.format(
+            CONFIG_NAME, DEFAULT_CONFIG_NAME))
 
     for slave in config['kube_slaves']['slaves']:
         for key, value in config['kube_slaves']['default'].iteritems():
