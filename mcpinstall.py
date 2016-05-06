@@ -19,8 +19,7 @@ DEFAULT_CONFIG_NAME = 'config.yaml.sample'
 
 
 def create_config(global_config):
-    return cr.create('kube-config', 'k8s/global_config',
-                     global_config)[0]
+    return cr.create('kube-config', 'k8s/global_config', global_config)[0]
 
 
 def get_slave_nodes():
@@ -43,13 +42,13 @@ def setup_master(config, user_config, existing_node):
     if existing_node:
         master = existing_node
     else:
-        master = cr.create(MASTER_NODE_RESOURCE_NAME, 'k8s/node',
-                           {'name': 'kube-node-master',
-                            'ip': user_config['ip'],
-                            'ssh_user': user_config['username'],
-                            'ssh_password': user_config['password'],
-                            'ssh_key': user_config['ssh_key']}
-                           )['kube-node-master']
+        master = cr.create(
+            MASTER_NODE_RESOURCE_NAME, 'k8s/node',
+            {'name': 'kube-node-master',
+             'ip': user_config['ip'],
+             'ssh_user': user_config['username'],
+             'ssh_password': user_config['password'],
+             'ssh_key': user_config['ssh_key']})['kube-node-master']
 
     master.connect(config, {})
     docker = cr.create('kube-docker-master',
@@ -87,50 +86,50 @@ def setup_nodes(config, user_config, num=1, existing_nodes=None):
 
     if existing_nodes:
         kube_nodes = [
-            setup_slave_node(config, kubernetes_master,
-                             calico_master, internal_network, i, None, node)
-            for (i, node) in enumerate(existing_nodes)]
+            setup_slave_node(config, kubernetes_master, calico_master,
+                             internal_network, i, None, node)
+            for (i, node) in enumerate(existing_nodes)
+        ]
     else:
         kube_nodes = [
-            setup_slave_node(config, kubernetes_master,
-                             calico_master, internal_network, i, user_config[i])
-            for i in xrange(num)]
+            setup_slave_node(config, kubernetes_master, calico_master,
+                             internal_network, i, user_config[i])
+            for i in xrange(num)
+        ]
 
     kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     all_nodes = kube_nodes[:] + [kube_master]
     hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
         for host_file in hosts_files:
-            node.connect(host_file, {
-                'name': 'hosts:name',
-                'ip': 'hosts:ip'
-            })
+            node.connect(host_file, {'name': 'hosts:name', 'ip': 'hosts:ip'})
 
 
-def setup_slave_node(config, kubernetes_master, calico_master,
-                     internal_network, i, user_config=None, existing_node=None):
+def setup_slave_node(config,
+                     kubernetes_master,
+                     calico_master,
+                     internal_network,
+                     i,
+                     user_config=None,
+                     existing_node=None):
     j = i + 1
     if existing_node:
         kube_node = existing_node
     else:
         kube_node = cr.create(
-            'kube-node-%d' % j,
-            'k8s/node',
+            'kube-node-%d' % j, 'k8s/node',
             {'name': 'kube-node-%d' % j,
              'ip': user_config['ip'],
              'ssh_user': user_config['username'],
              'ssh_password': user_config['password'],
-             'ssh_key': user_config['ssh_key']}
-        )['kube-node-%d' % j]
+             'ssh_key': user_config['ssh_key']})['kube-node-%d' % j]
 
-    iface_node = cr.create(
-        'kube-node-%d-iface' % j,
-        'k8s/virt_iface',
-        {'name': 'cbr0',
-         'ipaddr': str(internal_network + 256 * j + 1),
-         'onboot': 'yes',
-         'bootproto': 'static',
-         'type': 'Bridge'})['kube-node-%d-iface' % j]
+    iface_node = cr.create('kube-node-%d-iface' % j, 'k8s/virt_iface',
+                           {'name': 'cbr0',
+                            'ipaddr': str(internal_network + 256 * j + 1),
+                            'onboot': 'yes',
+                            'bootproto': 'static',
+                            'type': 'Bridge'})['kube-node-%d-iface' % j]
     kube_node.connect(iface_node, {})
 
     config.connect(iface_node, {'netmask': 'netmask'})
@@ -140,8 +139,7 @@ def setup_slave_node(config, kubernetes_master, calico_master,
     kube_node.connect(calico_node, {'ip': 'ip'})
     config.connect(calico_node, {'calico_version': 'version'})
 
-    calico_master.connect(calico_node,
-                          {'etcd_authority': 'etcd_authority'})
+    calico_master.connect(calico_node, {'etcd_authority': 'etcd_authority'})
     calico_node.connect(calico_node, {
         'etcd_authority': 'etcd_authority_internal'
     })
@@ -202,10 +200,9 @@ def add_node(args, user_config):
     kube_nodes = get_slave_nodes()
     newest_id = int(get_node_id(max(kube_nodes, key=get_node_id)))
 
-    new_nodes = [setup_slave_node(config,
-                                  user_config['kube_slaves']['slaves'][i],
-                                  kubernetes_master, calico_master,
-                                  internal_network, i)
+    new_nodes = [setup_slave_node(
+        config, user_config['kube_slaves']['slaves'][i], kubernetes_master,
+        calico_master, internal_network, i)
                  for i in xrange(newest_id, newest_id + args.nodes)]
 
     kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
@@ -213,15 +210,11 @@ def add_node(args, user_config):
     hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
         for host_file in hosts_files:
-            node.connect(host_file, {
-                'name': 'hosts:name',
-                'ip': 'hosts:ip'
-            })
+            node.connect(host_file, {'name': 'hosts:name', 'ip': 'hosts:ip'})
 
 
 def get_master_and_slave_nodes():
-    nodes = sorted(rs.load_all(startswith='node'),
-                   key=lambda x: x.name)
+    nodes = sorted(rs.load_all(startswith='node'), key=lambda x: x.name)
     # We are using existing nodes only if there are 2 or more of them. One
     # created node will result in all resources being created from scratch.
     if len(nodes) >= 2:
@@ -236,8 +229,8 @@ def deploy_k8s(args, user_config):
     config = create_config(user_config['global_config'])
 
     setup_master(config, user_config['kube_master'], master_node)
-    setup_nodes(config, user_config['kube_slaves']['slaves'],
-                args.nodes, slave_nodes)
+    setup_nodes(config, user_config['kube_slaves']['slaves'], args.nodes,
+                slave_nodes)
 
     if args.dashboard:
         add_dashboard(args)
@@ -257,19 +250,24 @@ commands = {
 def get_args(user_config):
     parser = argparse.ArgumentParser()
     parser.add_argument('command', type=str, choices=commands.keys())
-    parser.add_argument('--nodes', type=int,
+    parser.add_argument('--nodes',
+                        type=int,
                         default=len(user_config['kube_slaves']['slaves']),
                         help='Slave node count. Works with deploy and '
                         'add-node. WARNING - this parameter does not work if '
                         'you have already created Solar node resources. This '
                         'script will make use of all your previously created '
                         'Solar nodes if their count is bigger than 1.')
-    parser.add_argument('--dashboard', dest='dashboard', action='store_true',
+    parser.add_argument('--dashboard',
+                        dest='dashboard',
+                        action='store_true',
                         help='Add dashboard. Works with deploy only. Can be '
-                             ' done separately with `mcpinstall.py dashboard`')
-    parser.add_argument('--dns', dest='dns', action='store_true',
+                        ' done separately with `mcpinstall.py dashboard`')
+    parser.add_argument('--dns',
+                        dest='dns',
+                        action='store_true',
                         help='Add dns. Works with deploy only. Can be done '
-                             'separately with `mcpinstall.py dns')
+                        'separately with `mcpinstall.py dns')
     parser.set_defaults(dashboard=False, dns=False)
 
     return parser.parse_args()
