@@ -74,6 +74,9 @@ def setup_master(config, user_config, existing_node):
     kubelet.connect(kubelet, {'master_host': 'master_address',
                               'master_port': 'master_address'})
 
+    add_event(Dep('hosts_file_node_{}'.format(master.name), 'run', 'success',
+                  kubelet.name, 'run'))
+
     add_event(Dep(docker.name, 'run', 'success', kubelet.name, 'run'))
     add_event(Dep(kubelet.name, 'run', 'success', calico.name, 'run'))
 
@@ -162,6 +165,9 @@ def setup_slave_node(config,
     config.connect(kubelet, {'cluster_domain': 'cluster_domain',
                              'cluster_dns': 'cluster_dns',
                              'k8s_version': 'k8s_version'})
+
+    add_event(Dep('hosts_file_node_{}'.format(kube_node.name), 'run',
+                  'success', kubernetes_master.name, 'run'))
 
     add_event(Dep(docker.name, 'run', 'success', calico_node.name, 'run'))
     add_event(Dep(docker.name, 'run', 'success', kubelet.name, 'run'))
