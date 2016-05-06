@@ -1,0 +1,13 @@
+id: simple_riak_with_transports
+resources:
+#% for i in range(count|int) %#
+   #% set j = i +1 %#
+  - id: node#{j}#
+    from: k8s/node
+    input:
+      name: node#{j}#
+      ssh_user: 'vagrant'
+      ssh_key: ''
+      ssh_password: 'vagrant'
+      ip: '#{ips[i]}#'
+#% endfor %#

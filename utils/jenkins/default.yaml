@@ -1,0 +1,92 @@
+---
+rack-01-node-params:
+  vcpu: 2
+  memory: 1024
+  boot:
+    - hd
+  volumes:
+   - name: base
+     source_image:
+     format: qcow2
+  interfaces:
+   - label: eth0
+     l2_network_device: public
+   - label: eth1
+     l2_network_device: private
+   - label: eth2
+     l2_network_device: storage
+   - label: eth3
+     l2_network_device: management
+  network_config:
+    eth0:
+      networks:
+       - public
+    eth1:
+      networks:
+       - private
+    eth2:
+      networks:
+       - storage
+    eth3:
+      networks:
+       - management
+
+
+env_name:
+
+address_pools:
+# Network pools used by the environment
+  public-pool01:
+    net: 10.10.0.0/16:24
+    params:
+      tag: 0
+  private-pool01:
+    net: 10.11.0.0/16:24
+    params:
+      tag: 101
+  storage-pool01:
+    net: 10.12.0.0/16:24
+    params:
+      tag: 102
+  management-pool01:
+    net: 10.13.0.0/16:24
+    params:
+      tag: 103
+
+groups:
+ - name: rack-01
+   driver:
+     name: devops.driver.libvirt.libvirt_driver
+     params:
+       connection_string: qemu:///system
+       storage_pool_name: default
+       stp: True
+       hpet: False
+       use_host_cpu: true
+
+   network_pools:  # Address pools for OpenStack networks.
+     # Actual names should be used for keys
+     # (the same as in Nailgun, for example)
+
+     public: public-pool01
+     private: private-pool01
+     storage: storage-pool01
+     management: management-pool01
+
+   l2_network_devices:  # Libvirt bridges. It is *NOT* Nailgun networks
+     public:
+       address_pool: public-pool01
+       dhcp: "true"
+       forward:
+         mode: nat
+
+     private:
+       address_pool: private-pool01
+     storage:
+       address_pool: storage-pool01
+     management:
+       address_pool: management-pool01
+
+   nodes:
+    - name: solar
+      role: master

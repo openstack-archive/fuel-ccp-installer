@@ -6,3 +6,6 @@ deploy/solar
 solar-k8s-modules
 tmp
 solar-resources
+
+# vim files
+*.swp
