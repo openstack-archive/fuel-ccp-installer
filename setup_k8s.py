@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 import re
 
 from netaddr import IPAddress
@@ -10,6 +11,12 @@ from solar.core.resource import composer as cr
 from solar.core.resource import resource as rs
 from solar.events.api import add_event
 from solar.events.controls import Dep
+
+
+DEFAULT_MASTER_NODE_RESOURCE_NAME = 'kube-node-master'
+MASTER_NODE_RESOURCE_NAME = None
+CONFIG_NAME = 'config.yaml'
+DEFAULT_CONFIG_NAME = 'config.yaml.sample'
 
 
 def create_config(dns_config):
@@ -35,13 +42,17 @@ def get_free_slave_ip(available_ips):
     return sorted(free_ips)[0]
 
 
-def setup_master(config, user_config):
-    master = cr.create('kube-node-master', 'k8s/node',
-                       {'name': 'kube-node-master',
-                        'ip': user_config['ip'],
-                        'ssh_user': user_config['username'],
-                        'ssh_password': user_config['password'],
-                        'ssh_key': user_config['ssh_key']})['kube-node-master']
+def setup_master(config, user_config, existing_node):
+    if existing_node:
+        master = existing_node
+    else:
+        master = cr.create(MASTER_NODE_RESOURCE_NAME, 'k8s/node',
+                           {'name': 'kube-node-master',
+                            'ip': user_config['ip'],
+                            'ssh_user': user_config['username'],
+                            'ssh_password': user_config['password'],
+                            'ssh_key': user_config['ssh_key']}
+                           )['kube-node-master']
 
     master.connect(config, {})
     docker = cr.create('kube-docker-master',
@@ -71,20 +82,26 @@ def setup_master(config, user_config):
     add_event(Dep(kubelet.name, 'run', 'success', calico.name, 'run'))
 
 
-def setup_nodes(config, user_config, num=1):
+def setup_nodes(config, user_config, num=1, existing_nodes=None):
     kube_nodes = []
     kubernetes_master = rs.load('kubelet-master')
     calico_master = rs.load('calico-master')
     internal_network = IPAddress(config.args['network'])
 
-    kube_nodes = [
-        setup_slave_node(config, user_config, kubernetes_master, calico_master,
-                         internal_network, i)
-        for i in xrange(num)]
+    if existing_nodes:
+        kube_nodes = [
+            setup_slave_node(config, kubernetes_master,
+                             calico_master, internal_network, i, None, node)
+            for (i, node) in enumerate(existing_nodes)]
+    else:
+        kube_nodes = [
+            setup_slave_node(config, kubernetes_master,
+                             calico_master, internal_network, i, user_config[i])
+            for i in xrange(num)]
 
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     all_nodes = kube_nodes[:] + [kube_master]
-    hosts_files = rs.load_all(startswith='hosts_file_node_kube-')
+    hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
         for host_file in hosts_files:
             node.connect(host_file, {
@@ -93,18 +110,21 @@ def setup_nodes(config, user_config, num=1):
             })
 
 
-def setup_slave_node(config, user_config, kubernetes_master, calico_master,
-                     internal_network, i):
+def setup_slave_node(config, kubernetes_master, calico_master,
+                     internal_network, i, user_config=None, existing_node=None):
     j = i + 1
-    kube_node = cr.create(
-        'kube-node-%d' % j,
-        'k8s/node',
-        {'name': 'kube-node-%d' % j,
-         'ip': get_free_slave_ip(user_config['ips']),
-         'ssh_user': user_config['username'],
-         'ssh_password': user_config['password'],
-         'ssh_key': user_config['ssh_key']}
-    )['kube-node-%d' % j]
+    if existing_node:
+        kube_node = existing_node
+    else:
+        kube_node = cr.create(
+            'kube-node-%d' % j,
+            'k8s/node',
+            {'name': 'kube-node-%d' % j,
+             'ip': user_config['ip'],
+             'ssh_user': user_config['username'],
+             'ssh_password': user_config['password'],
+             'ssh_key': user_config['ssh_key']}
+        )['kube-node-%d' % j]
 
     iface_node = cr.create(
         'kube-node-%d-iface' % j,
@@ -155,7 +175,7 @@ def setup_slave_node(config, user_config, kubernetes_master, calico_master,
 
 
 def add_dashboard(args, *_):
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     master = rs.load('kubelet-master')
     dashboard = cr.create('kubernetes-dashboard', 'k8s/dashboard', {})[0]
     master.connect(dashboard, {'master_port': 'api_port'})
@@ -164,7 +184,7 @@ def add_dashboard(args, *_):
 
 def add_dns(args, *_):
     config = rs.load('kube-config')
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     master = rs.load('kubelet-master')
     kube_dns = cr.create('kube-dns', 'k8s/kubedns', {})[0]
     master.connect(kube_dns, {'master_port': 'api_port'})
@@ -185,14 +205,15 @@ def add_node(args, user_config):
     kube_nodes = get_slave_nodes()
     newest_id = int(get_node_id(max(kube_nodes, key=get_node_id)))
 
-    new_nodes = [setup_slave_node(config, user_config['kube_slaves'],
+    new_nodes = [setup_slave_node(config,
+                                  user_config['kube_slaves']['slaves'][i],
                                   kubernetes_master, calico_master,
                                   internal_network, i)
                  for i in xrange(newest_id, newest_id + args.nodes)]
 
-    kube_master = rs.load('kube-node-master')
+    kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     all_nodes = new_nodes[:] + [kube_master]
-    hosts_files = rs.load_all(startswith='hosts_file_node_kube-')
+    hosts_files = rs.load_all(startswith='hosts_file_node_')
     for node in all_nodes:
         for host_file in hosts_files:
             node.connect(host_file, {
@@ -201,10 +222,25 @@ def add_node(args, user_config):
             })
 
 
+def get_master_and_slave_nodes():
+    nodes = sorted(rs.load_all(startswith='node'),
+                   key=lambda x: x.name)
+    # We are using existing nodes only if there are 2 or more of them. One
+    # created node will result in all resources being created from scratch.
+    if len(nodes) >= 2:
+        return (nodes[0], nodes[1:])
+    else:
+        return (None, None)
+
+
 def deploy_k8s(args, user_config):
+    master_node, slave_nodes = get_master_and_slave_nodes()
+
     config = create_config(user_config['dns'])
-    setup_master(config, user_config['kube_master'])
-    setup_nodes(config, user_config['kube_slaves'], args.nodes)
+
+    setup_master(config, user_config['kube_master'], master_node)
+    setup_nodes(config, user_config['kube_slaves']['slaves'],
+                args.nodes, slave_nodes)
 
     if args.dashboard:
         add_dashboard(args)
@@ -221,12 +257,16 @@ commands = {
 }
 
 
-def get_args():
+def get_args(user_config):
     parser = argparse.ArgumentParser()
     parser.add_argument('command', type=str, choices=commands.keys())
-    parser.add_argument('--nodes', type=int, default=1,
+    parser.add_argument('--nodes', type=int,
+                        default=len(user_config['kube_slaves']['slaves']),
                         help='Slave node count. Works with deploy and '
-                        'add-node')
+                        'add-node. WARNING - this parameter does not work if '
+                        'you have already created Solar node resources. This '
+                        'script will make use of all your previously created '
+                        'Solar nodes if their count is bigger than 1.')
     parser.add_argument('--dashboard', dest='dashboard', action='store_true',
                         help='Add dashboard. Works with deploy only. Can be '
                              ' done separately with `setup_k8s.py dashboard`')
@@ -239,11 +279,39 @@ def get_args():
 
 
 def get_user_config():
-    with open('config.yaml') as conf:
-        return yaml.load(conf)
+    global CONFIG_NAME
+    global DEFAULT_CONFIG_NAME
+
+    if os.path.exists(CONFIG_NAME):
+        with open(CONFIG_NAME) as conf:
+            config = yaml.load(conf)
+    elif os.path.exists(DEFAULT_CONFIG_NAME):
+        with open(DEFAULT_CONFIG_NAME) as conf:
+            config = yaml.load(conf)
+    else:
+        raise Exception('{0} and {1} configuration files not found'.format(
+            CONFIG_NAME, DEFAULT_CONFIG_NAME))
+
+    for slave in config['kube_slaves']['slaves']:
+        for key, value in config['kube_slaves']['default'].iteritems():
+            if key not in slave:
+                slave[key] = value
+
+    return config
+
+
+def setup_master_node_name():
+    global MASTER_NODE_RESOURCE_NAME
+
+    master, _ = get_master_and_slave_nodes()
+    if master is not None:
+        MASTER_NODE_RESOURCE_NAME = master.name
+    else:
+        MASTER_NODE_RESOURCE_NAME = DEFAULT_MASTER_NODE_RESOURCE_NAME
 
 
 if __name__ == "__main__":
-    args = get_args()
     user_config = get_user_config()
+    args = get_args(user_config)
+    setup_master_node_name()
     commands[args.command](args, user_config)
