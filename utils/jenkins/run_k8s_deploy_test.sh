@@ -3,6 +3,6 @@ set -xe
 
 export SLAVES_COUNT=3
 export DEPLOY_TIMEOUT=1200
-export TEST_SCRIPT="/usr/bin/python setup_k8s.py deploy"
+export TEST_SCRIPT="/usr/bin/python mcpinstall.py deploy"
 
 ./utils/jenkins/run.sh

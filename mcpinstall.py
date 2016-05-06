@@ -266,10 +266,10 @@ def get_args(user_config):
                         'Solar nodes if their count is bigger than 1.')
     parser.add_argument('--dashboard', dest='dashboard', action='store_true',
                         help='Add dashboard. Works with deploy only. Can be '
-                             ' done separately with `setup_k8s.py dashboard`')
+                             ' done separately with `mcpinstall.py dashboard`')
     parser.add_argument('--dns', dest='dns', action='store_true',
                         help='Add dns. Works with deploy only. Can be done '
-                             'separately with `setup_k8s.py dns')
+                             'separately with `mcpinstall.py dns')
     parser.set_defaults(dashboard=False, dns=False)
 
     return parser.parse_args()
