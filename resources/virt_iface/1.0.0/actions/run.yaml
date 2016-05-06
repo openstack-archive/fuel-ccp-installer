@@ -1,8 +1,19 @@
 - hosts: [{{host}}]
   become: yes
   tasks:
-    - dnf: name=bridge-utils state=present
+    - package: name=bridge-utils state=present
     - template:
         src: {{templates_dir}}/ifcfg
         dest: /etc/sysconfig/network-scripts/ifcfg-{{name}}
+      when: ansible_distribution == "Fedora"
     - service: name=network.service state=restarted
+      when: ansible_distribution == "Fedora"
+    - template:
+        src: {{templates_dir}}/ifcfg
+        dest: /etc/network/interfaces.d/{{name}}.cfg
+      when: ansible_distribution == "Ubuntu"
+    - shell: brctl addbr {{name}}
+      when: ansible_distribution == "Ubuntu"
+      ignore_errors: True
+    - service: name=networking.service state=restarted
+      when: ansible_distribution == "Ubuntu"
