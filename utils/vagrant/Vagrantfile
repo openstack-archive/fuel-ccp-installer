@@ -40,7 +40,7 @@ MASTER_RAM = cfg["master_ram"]
 MASTER_IPS = cfg["master_ips"]
 MASTER_IMAGE = cfg["master_image"]
 MASTER_IMAGE_VERSION = cfg["master_image_version"]
-SYNC_TYPE = cfg["sync_type"]
+SYNC_TYPE = cfg.fetch("sync_type", "rsync")
 MASTER_CPUS = cfg["master_cpus"]
 SLAVES_CPUS = cfg["slaves_cpus"]
 PARAVIRT_PROVIDER = cfg.fetch('paravirtprovider', false)
@@ -50,9 +50,6 @@ def shell_script(filename, env=[], args=[])
   "/bin/bash -c \"#{env.join ' '} #{filename} #{args.join ' '} \""
 end
 
-if not SYNC_TYPE
-  SYNC_TYPE = "rsync"
-end
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
