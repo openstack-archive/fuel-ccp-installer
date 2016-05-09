@@ -30,6 +30,11 @@ In config.yaml you can set:
 - default login data for kubernetes slave nodes
 - node-specific config (IP address is required, but you can override default access data)
 - some global kubernetes settings like dns service ip and dns domain
+- global_config resource inputs including:
+  - cluster dns ip and domain
+  - cluster ip range
+  - default k8s version
+  - default calico version
 
 LCM example: Kubernetes version change:
 --------------------------------------
