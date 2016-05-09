@@ -25,7 +25,12 @@ solar repo import -l solar-resources/templates -n templates
 pushd /vagrant
 sudo pip install -r requirements.txt
 solar repo import -l resources --name k8s
-cp config.yaml.sample config.yaml
+
+# copy config if not found
+if [ ! -f "config.yaml" ]; then
+    cp config.yaml.sample config.yaml
+fi
+
 ./mcpinstall.py deploy
 ./mcpinstall.py dns
 solar changes stage
