@@ -23,31 +23,30 @@ mkdir -p tmp
 
 mkdir -p logs
 rm -rf logs/*
+
 ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python utils/jenkins/env.py create_env
 
 SLAVE_IPS=`ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_slaves_ips`
 ADMIN_IP=`ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_admin_ip`
 
 # Wait for all servers(grep only IP addresses):
-for IP in `echo ${ADMIN_IP} ${SLAVE_IPS} |grep -oE '((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])'`
-do
-  elapsed_time=0
-  master_wait_time=30
-  while true
-  do
-    report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} echo ok || echo not ready)
+for IP in `echo ${ADMIN_IP} ${SLAVE_IPS} |grep -oE '((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])'`; do
+    elapsed_time=0
+    master_wait_time=30
+    while true; do
+        report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} echo ok || echo not ready)
 
-    if [ "${report}" = "ok" ]; then
-      break
-    fi
+        if [ "${report}" = "ok" ]; then
+            break
+        fi
 
-    if [ "${elapsed_time}" -gt "${master_wait_time}" ]; then
-      exit 2
-    fi
+        if [ "${elapsed_time}" -gt "${master_wait_time}" ]; then
+            exit 2
+        fi
 
-    sleep 1
-    let elapsed_time+=1
-  done
+        sleep 1
+        let elapsed_time+=1
+    done
 done
 
 sshpass -p ${ADMIN_PASSWORD} rsync -rz . -e "ssh ${SSH_OPTIONS}" ${ADMIN_USER}@${ADMIN_IP}:/home/vagrant/solar-k8s --exclude tmp --exclude x-venv --exclude .vagrant --exclude .eggs --exclude *.box --exclude images
@@ -82,32 +81,31 @@ solar changes process
 solar orch run-once
 
 elapsed_time=0
-while true
-do
-  report=\$(solar o report)
+while true; do
+    report=\$(solar o report)
 
-  errors=\$(echo "\${report}" | grep -e ERROR | wc -l)
-  if [ "\${errors}" != "0" ]; then
-    solar orch report
-    echo FAILURE
-    exit 1
-  fi
+    errors=\$(echo "\${report}" | grep -e ERROR | wc -l)
+    if [ "\${errors}" != "0" ]; then
+        solar orch report
+        echo FAILURE
+        exit 1
+    fi
 
-  running=\$(echo "\${report}" | grep -e PENDING -e INPROGRESS | wc -l)
-  if [ "\${running}" == "0" ]; then
-    solar orch report
-    echo SUCCESS
-    exit 0
-  fi
+    running=\$(echo "\${report}" | grep -e PENDING -e INPROGRESS | wc -l)
+    if [ "\${running}" == "0" ]; then
+        solar orch report
+        echo SUCCESS
+        exit 0
+    fi
 
-  if [ "\${elapsed_time}" -gt "${DEPLOY_TIMEOUT}" ]; then
-    solar orch report
-    echo TIMEOUT
-    exit 2
-  fi
+    if [ "\${elapsed_time}" -gt "${DEPLOY_TIMEOUT}" ]; then
+        solar orch report
+        echo TIMEOUT
+        exit 2
+    fi
 
-  sleep 5
-  let elapsed_time+=5
+    sleep 5
+    let elapsed_time+=5
 done
 EOF
 
@@ -117,13 +115,13 @@ deploy_res=$?
 sshpass -p ${ADMIN_PASSWORD} scp ${SSH_OPTIONS} ${ADMIN_USER}@${ADMIN_IP}:/home/vagrant/solar.log logs/
 
 if [ "${deploy_res}" -eq "0" -a "${DONT_DESTROY_ON_SUCCESS}" -e "1" ];then
-  dos.py erase ${ENV_NAME}
+    dos.py erase ${ENV_NAME}
 else
-  if [ "${deploy_res}" -ne "0" ];then
-    dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
-    dos.py destroy ${ENV_NAME}
-    echo "To revert snapshot please run: dos.py revert ${ENV_NAME} ${ENV_NAME}.snapshot"
-  fi
+    if [ "${deploy_res}" -ne "0" ];then
+        dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
+        dos.py destroy ${ENV_NAME}
+        echo "To revert snapshot please run: dos.py revert ${ENV_NAME} ${ENV_NAME}.snapshot"
+    fi
 fi
 
 exit ${deploy_res}
