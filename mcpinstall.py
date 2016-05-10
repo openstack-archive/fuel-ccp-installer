@@ -209,7 +209,7 @@ def add_node(args, user_config):
     new_nodes = [setup_slave_node(
         config, user_config['kube_slaves']['slaves'][i], kubernetes_master,
         calico_master, internal_network, i)
-                 for i in xrange(newest_id, newest_id + args.nodes)]
+        for i in xrange(newest_id, newest_id + args.nodes)]
 
     kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     all_nodes = new_nodes[:] + [kube_master]

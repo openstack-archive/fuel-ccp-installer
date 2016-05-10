@@ -17,7 +17,7 @@ def create_overlay_image(env_name, node_name, base_image):
         sub.call(['qemu-img', 'create', '-b', base_image, '-f', 'qcow2',
                   overlay_image_path])
     except sub.CalledProcessError as e:
-        print e.output
+        sys.stdout.write(e.output)
         raise
     return overlay_image_path
 
@@ -41,8 +41,7 @@ def create_config():
 
     group = conf['groups'][0]
     for i in range(slaves_count):
-        group['nodes'].append({'name': 'slave-{}'.format(i),
-                               'role': 'slave'})
+        group['nodes'].append({'name': 'slave-{}'.format(i), 'role': 'slave'})
     for node in group['nodes']:
         node['params'] = deepcopy(node_params)
         if node['role'] == 'master':
@@ -53,14 +52,17 @@ def create_config():
         node['params']['volumes'][0]['source_image'] = vol_path
     return {'template': {'devops_settings': conf}}
 
+
 def get_env():
     env = os.environ
     env_name = env['ENV_NAME']
     return Environment.get(name=env_name)
 
+
 def get_master_ip(env):
-    admin=env.get_node(role='master')
+    admin = env.get_node(role='master')
     return admin.get_ip_address_by_network_name('public')
+
 
 def get_slave_ips(env):
     slaves = env.get_nodes(role='slave')
@@ -68,6 +70,7 @@ def get_slave_ips(env):
     for slave in slaves:
         ips.append(slave.get_ip_address_by_network_name('public'))
     return ips
+
 
 def define_from_config(conf):
     env = Environment.create_environment(conf)
@@ -83,6 +86,6 @@ if __name__ == '__main__':
         config = create_config()
         define_from_config(config)
     elif cmd == 'get_admin_ip':
-        print get_master_ip(get_env())
+        sys.stdout.write(get_master_ip(get_env()))
     elif cmd == 'get_slaves_ips':
-        print get_slave_ips(get_env())
+        sys.stdout.write(get_slave_ips(get_env()))
