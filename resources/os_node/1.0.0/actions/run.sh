@@ -7,5 +7,7 @@ if [[ ! "$os" == "Ubuntu" ]]; then
 else
     if [[ "$os" == "Ubuntu" ]]; then
         sudo apt-get install -y python ansible
+        sudo hostname {{name}}
+        sudo bash -c  "echo {{name}} > /etc/hostname"
     fi
 fi
