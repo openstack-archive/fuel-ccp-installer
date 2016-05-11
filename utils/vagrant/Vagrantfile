@@ -62,6 +62,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.box_version = MASTER_IMAGE_VERSION
 
     config.vm.provision "file", source: "~/.vagrant.d/insecure_private_key", destination: "/vagrant/tmp/keys/ssh_private"
+    config.vm.provision "shell", inline: "sudo apk add --no-cache rsync"
     config.vm.host_name = "solar"
 
     config.vm.provider :virtualbox do |v|
@@ -89,6 +90,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       libvirt.disk_bus = "virtio"
     end
 
+    if Vagrant.has_plugin?("vagrant-vbguest")
+      config.vbguest.auto_update = false
+    end
+
     if SYNC_TYPE == 'nfs'
       config.vm.synced_folder "../../", "/vagrant", type: "nfs"
     end
@@ -113,6 +118,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.box = SLAVES_IMAGE
       config.vm.box_version = SLAVES_IMAGE_VERSION
       config.vm.host_name = "node-#{index}"
+
+      if Vagrant.has_plugin?("vagrant-vbguest")
+        config.vbguest.no_install = true
+      end
 
       ind = 0
       SLAVES_IPS.each do |ip|
