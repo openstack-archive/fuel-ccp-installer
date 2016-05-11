@@ -6,8 +6,7 @@ export SOLAR_CONFIG_OVERRIDE="/.solar_config_override"
 
 # install kubectl if not exists
 if ! type "kubectl" > /dev/null; then
-    wget "https://storage.googleapis.com/kubernetes-release/" \
-    "release/v1.2.2/bin/linux/amd64/kubectl"
+    wget "https://storage.googleapis.com/kubernetes-release/release/v1.2.2/bin/linux/amd64/kubectl"
     chmod +x kubectl
     sudo mv kubectl /usr/local/bin/kubectl
 fi
