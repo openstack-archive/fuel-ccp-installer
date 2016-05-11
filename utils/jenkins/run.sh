@@ -49,7 +49,7 @@ for IP in `echo ${ADMIN_IP} ${SLAVE_IPS} |grep -oE '((1?[0-9][0-9]?|2[0-4][0-9]|
     done
 done
 
-sshpass -p ${ADMIN_PASSWORD} rsync -rz . -e "ssh ${SSH_OPTIONS}" ${ADMIN_USER}@${ADMIN_IP}:/home/vagrant/solar-k8s --exclude tmp --exclude x-venv --exclude .vagrant --exclude .eggs --exclude *.box --exclude images
+sshpass -p ${ADMIN_PASSWORD} rsync -rz . -e "ssh ${SSH_OPTIONS}" ${ADMIN_USER}@${ADMIN_IP}:/home/vagrant/solar-k8s --exclude tmp --exclude x-venv --exclude .vagrant --exclude .eggs --exclude *.box --exclude images --exclude utils/packer
 
 set +e
 
@@ -114,7 +114,7 @@ deploy_res=$?
 # collect logs
 sshpass -p ${ADMIN_PASSWORD} scp ${SSH_OPTIONS} ${ADMIN_USER}@${ADMIN_IP}:/home/vagrant/solar.log logs/
 
-if [ "${deploy_res}" -eq "0" -a "${DONT_DESTROY_ON_SUCCESS}" -e "1" ];then
+if [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" != "1" ];then
     dos.py erase ${ENV_NAME}
 else
     if [ "${deploy_res}" -ne "0" ];then

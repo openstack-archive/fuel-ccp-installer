@@ -88,4 +88,4 @@ if __name__ == '__main__':
     elif cmd == 'get_admin_ip':
         sys.stdout.write(get_master_ip(get_env()))
     elif cmd == 'get_slaves_ips':
-        sys.stdout.write(get_slave_ips(get_env()))
+        sys.stdout.write(str(get_slave_ips(get_env())))
