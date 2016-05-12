@@ -57,17 +57,17 @@ end
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
+  if not Vagrant.has_plugin?("vagrant-alpine")
+    system "vagrant plugin install vagrant-alpine"
+    exec "vagrant #{ARGV.join' '}"
+  end
+
   config.vm.define "solar", primary: true do |config|
     config.vm.box = MASTER_IMAGE
     config.vm.box_version = MASTER_IMAGE_VERSION
 
     config.vm.provision "file", source: "~/.vagrant.d/insecure_private_key", destination: "/vagrant/tmp/keys/ssh_private"
     config.vm.provision "shell", inline: "sudo apk add --no-cache rsync"
-
-    if Vagrant.has_plugin?("vagrant-alpine")
-      # you need vagrant-alpine plugin to set host_name
-      config.vm.host_name = "solar"
-    end
 
     config.vm.provider :virtualbox do |v|
       v.memory = MASTER_RAM
