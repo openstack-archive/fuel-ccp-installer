@@ -36,6 +36,8 @@ def create_config():
         master_image_path = image_path
     slaves_count = int(env['SLAVES_COUNT'])
 
+    bridge = env.get('VLAN_BRIDGE', None)
+
     conf['env_name'] = env_name
     node_params = conf['rack-01-node-params']
 
@@ -50,7 +52,23 @@ def create_config():
             path = image_path
         vol_path = create_overlay_image(env_name, node['name'], path)
         node['params']['volumes'][0]['source_image'] = vol_path
+        if bridge:
+            interface = _get_free_eth_interface(node)
+            node['params']['interfaces'].append({'label': interface,
+                                                 'type': 'bridge',
+                                                 'bridge': bridge})
     return {'template': {'devops_settings': conf}}
+
+
+def _get_free_eth_interface(node):
+    taken = [i['label'] for i in node['params']['interfaces']]
+    iface = 'eth'
+    index = 0
+    while True:
+        new_iface = '{}{}'.format(iface, index)
+        if new_iface not in taken:
+            return new_iface
+        index += 1
 
 
 def get_env():
@@ -68,8 +86,19 @@ def get_slave_ips(env):
     slaves = env.get_nodes(role='slave')
     ips = []
     for slave in slaves:
-        ips.append(slave.get_ip_address_by_network_name('public'))
+        ip = slave.get_ip_address_by_network_name('public').encode('utf-8')
+        ips.append(ip)
     return ips
+
+
+def get_bridged_iface_mac(env, ip):
+    for node in env.get_nodes():
+        ips = [iface.addresses[0].ip_address for iface in node.interfaces
+               if iface.addresses]
+        if ip in ips:
+            for iface in node.interfaces:
+                if iface.type == 'bridge':
+                    return iface.mac_address
 
 
 def define_from_config(conf):
@@ -79,7 +108,7 @@ def define_from_config(conf):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         sys.exit(2)
     cmd = sys.argv[1]
     if cmd == 'create_env':
@@ -89,3 +118,9 @@ if __name__ == '__main__':
         sys.stdout.write(get_master_ip(get_env()))
     elif cmd == 'get_slaves_ips':
         sys.stdout.write(str(get_slave_ips(get_env())))
+    elif cmd == 'get_bridged_iface_mac':
+        if len(sys.argv) < 3:
+            sys.stdout.write('IP address required')
+            sys.exit(1)
+        ip = sys.argv[2]
+        sys.stdout.write(str(get_bridged_iface_mac(get_env(), ip)))

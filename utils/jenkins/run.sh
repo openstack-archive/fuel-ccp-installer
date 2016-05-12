@@ -111,6 +111,37 @@ EOF
 
 deploy_res=$?
 
+# setup VLAN if everything is ok and env will not be deleted
+if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
+    rm -f VLAN_IPS
+    for IP in `echo ${ADMIN_IP} ${SLAVE_IPS} |grep -oE '((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])'`; do
+        bridged_iface_mac="`ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_bridged_iface_mac $IP`"
+
+        sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} bash -s <<EOF >>VLAN_IPS
+bridged_iface=\$(ifconfig -a|awk -v mac="$bridged_iface_mac" '\$0 ~ mac {print \$1}' 'RS=\n\n')
+sudo ip route del default
+sudo dhclient "\${bridged_iface}"
+echo \$(ip addr list |grep ${bridged_iface_mac} -A 1 |grep 'inet ' |cut -d' ' -f6| cut -d/ -f1)
+EOF
+
+    done
+set +x
+    sed -i '/^\s*$/d' VLAN_IPS
+    echo "**************************************"
+    echo "**************************************"
+    echo "**************************************"
+    echo "* VLANs IP addresses"
+    echo "* MASTER IP: `head -n1 VLAN_IPS`"
+    echo "* SLAVES IPS: `tail -n +2 VLAN_IPS | tr '\n' ' '`"
+    echo "* USERNAME: vagrant"
+    echo "* PASSWORD: vagrant"
+    echo "**************************************"
+    echo "**************************************"
+    echo "**************************************"
+set -x
+fi
+
+
 # collect logs
 sshpass -p ${ADMIN_PASSWORD} scp ${SSH_OPTIONS} ${ADMIN_USER}@${ADMIN_IP}:/home/vagrant/solar.log logs/
 
