@@ -35,4 +35,13 @@ fi
 ./mcpinstall.py dns
 solar changes stage
 solar changes process
-solar orch run-once -w 1200
+
+SUCCESS_MESSAGE='mcpinstall succeeded'
+ERROR_MESSAGE='mcpinstall encountered an error. Please refer to above message to see detailed error message. Deployment continues.'
+
+if solar orch run-once -w 1200 -s ; then
+    echo $SUCCESS_MESSAGE
+else
+    echo $ERROR_MESSAGE
+    solar orch report -w 120
+fi
