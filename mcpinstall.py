@@ -28,16 +28,6 @@ def get_slave_nodes():
     return [node for node in kube_nodes if p.match(node.name)]
 
 
-def get_free_slave_ip(available_ips):
-    used_ips = [node.ip() for node in get_slave_nodes()]
-    free_ips = set(available_ips) - set(used_ips)
-    if len(free_ips) == 0:
-        raise ValueError('No free IP addresses available. '
-                         'Did you edit config.yaml?')
-
-    return sorted(free_ips)[0]
-
-
 def setup_master(config, user_config, existing_node):
     if existing_node:
         master = existing_node
@@ -195,6 +185,10 @@ def add_dns(args, *_):
 
 
 def add_node(args, user_config):
+    if args.nodes == 0:
+        requested_num = 1
+    else:
+        requested_num = args.nodes
     config = rs.load('kube-config')
     kubernetes_master = rs.load('kubelet-master')
     calico_master = rs.load('calico-master')
@@ -206,10 +200,18 @@ def add_node(args, user_config):
     kube_nodes = get_slave_nodes()
     newest_id = int(get_node_id(max(kube_nodes, key=get_node_id)))
 
+    user_defined_nodes = user_config['kube_slaves']['slaves']
+    new_left = len(user_defined_nodes) - len(kube_nodes)
+    if new_left <= 0:
+        raise ValueError("You need to configure more nodes in config.yaml")
+    if new_left < requested_num:
+        raise ValueError("You need to configure more nodes in config.yaml")
+
     new_nodes = [setup_slave_node(
-        config, user_config['kube_slaves']['slaves'][i], kubernetes_master,
-        calico_master, internal_network, i)
-        for i in xrange(newest_id, newest_id + args.nodes)]
+        config=config, user_config=user_defined_nodes[i],
+        kubernetes_master=kubernetes_master, calico_master=calico_master,
+        internal_network=internal_network, i=i)
+        for i in xrange(newest_id, newest_id + requested_num)]
 
     kube_master = rs.load(MASTER_NODE_RESOURCE_NAME)
     all_nodes = new_nodes[:] + [kube_master]
@@ -230,12 +232,16 @@ def get_master_and_slave_nodes():
 
 
 def deploy_k8s(args, user_config):
+    if args.nodes == 0:
+        requested_num = len(user_config['kube_slaves']['slaves'])
+    else:
+        requested_num = args.nodes
     master_node, slave_nodes = get_master_and_slave_nodes()
 
     config = create_config(user_config['global_config'])
 
     setup_master(config, user_config['kube_master'], master_node)
-    setup_nodes(config, user_config['kube_slaves']['slaves'], args.nodes,
+    setup_nodes(config, user_config['kube_slaves']['slaves'], requested_num,
                 slave_nodes)
 
     if args.dashboard:
@@ -258,7 +264,7 @@ def get_args(user_config):
     parser.add_argument('command', type=str, choices=commands.keys())
     parser.add_argument('--nodes',
                         type=int,
-                        default=len(user_config['kube_slaves']['slaves']),
+                        default=0,
                         help='Slave node count. Works with deploy and '
                         'add-node. WARNING - this parameter does not work if '
                         'you have already created Solar node resources. This '
