@@ -21,7 +21,7 @@ input:
     value: 10.254.0.0/16
   k8s_version:
     schema: str!
-    value: v1.2.2
+    value: v1.2.4
   calico_version:
     schema: str!
-    value: v0.18.0
+    value: v0.19.0
