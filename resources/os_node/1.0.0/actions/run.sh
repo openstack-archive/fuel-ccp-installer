@@ -1,3 +1,5 @@
+set -xe
+
 os=`lsb_release -si`
 
 if [[ ! "$os" == "Ubuntu" ]]; then
