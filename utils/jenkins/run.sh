@@ -135,6 +135,7 @@ set +x
     echo "* SLAVES IPS: `tail -n +2 VLAN_IPS | tr '\n' ' '`"
     echo "* USERNAME: vagrant"
     echo "* PASSWORD: vagrant"
+    echo "* K8s dashboard: http://`head -n1 VLAN_IPS`/api/v1/proxy/namespaces/kube-system/services/kubernetes-dashboard"
     echo "**************************************"
     echo "**************************************"
     echo "**************************************"
