@@ -11,12 +11,16 @@ rack-01-node-params:
   interfaces:
    - label: eth0
      l2_network_device: public
+     interface_model: virtio
    - label: eth1
      l2_network_device: private
+     interface_model: virtio
    - label: eth2
      l2_network_device: storage
+     interface_model: virtio
    - label: eth3
      l2_network_device: management
+     interface_model: virtio
   network_config:
     eth0:
       networks:
