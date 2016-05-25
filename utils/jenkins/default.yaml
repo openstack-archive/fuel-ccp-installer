@@ -44,6 +44,12 @@ address_pools:
     net: 10.10.0.0/16:24
     params:
       tag: 0
+      ip_reserved:
+        gateway: +1            # Provides variable gateway address for 3rd-party modules
+        l2_network_device: +1  # Reserved IP that will be assigned to the libvirt network device
+      ip_ranges:
+        rack-01: [+2, -2]  # Provides address range for 'rack-01' for 3rd-party modules
+        dhcp: [+2, -2]     # Reserved 'dhcp' range name for libvirt driver
   private-pool01:
     net: 10.11.0.0/16:24
     params:
@@ -80,7 +86,7 @@ groups:
    l2_network_devices:  # Libvirt bridges. It is *NOT* Nailgun networks
      public:
        address_pool: public-pool01
-       dhcp: "true"
+       dhcp: true
        forward:
          mode: nat
 
