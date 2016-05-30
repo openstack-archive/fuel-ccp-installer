@@ -86,7 +86,7 @@ groups:
    l2_network_devices:  # Libvirt bridges. It is *NOT* Nailgun networks
      public:
        address_pool: public-pool01
-       dhcp: true
+       dhcp: 'true'
        forward:
          mode: nat
 
