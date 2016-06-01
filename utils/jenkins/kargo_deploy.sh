@@ -49,38 +49,39 @@ done
 set +e
 current_slave=1
 deploy_args=""
-if ! [ -f ~/.ssh/id_rsa ]; then
-    ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
+if ! [ -f $WORKSPACE/id_rsa ]; then
+    ssh-keygen -t rsa -f $WORKSPACE/id_rsa -N "" -q
 fi
-
+eval $(ssh-agent)
+ssh-add $WORKSPACE/id_rsa
 
 for slaveip in ${SLAVE_IPS[@]}; do
     echo "Adding ssh key authentication"
-    sshpass $sshpass ssh-copy-id $sshopts vagrant@${slaveip} -p 22
+    sshpass $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS -i $WORKSPACE/id_rsa $ADMIN_USER@${slaveip} -p 22
 
     deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
     ((current_slave++))
 done
 
 echo "Setting up required dependencies..."
-ssh $sshopts vagrant@$ADMIN_IP sudo apt-get install -y git python-setuptools python-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
-ssh $sshopts vagrant@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2'"
-ssh $sshopts vagrant@$ADMIN_IP "sudo pip install 'cffi>=1.6.0'"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-setuptools python-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2'"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cffi>=1.6.0'"
 
 echo "Setting up ansible..."
-ssh $sshopts vagrant@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible;apt-get update;apt-get install -y ansible"'
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible;apt-get update;apt-get install -y ansible"'
 
 echo "Setting up kargo..."
-ssh $sshopts vagrant@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
-ssh $sshopts vagrant@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup.py install'"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup.py install'"
 
 echo "Preparing kargo nodes..."
-ssh $sshopts vagrant@$ADMIN_IP kargo prepare -y --nodes $deploy_args
-cat ~/.ssh/id_rsa | ssh $sshopts vagrant@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
-ssh $sshopts vagrant@$ADMIN_IP chmod 600 .ssh/id_rsa
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --nodes $deploy_args
+cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
 echo "Deploying k8s via kargo..."
-ssh $sshopts vagrant@$ADMIN_IP kargo deploy -y
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo deploy -y
 
 deploy_res=$?
 
@@ -106,8 +107,8 @@ set +x
     echo "* VLANs IP addresses"
     echo "* MASTER IP: `head -n1 VLAN_IPS`"
     echo "* SLAVES IPS: `tail -n +2 VLAN_IPS | tr '\n' ' '`"
-    echo "* USERNAME: vagrant"
-    echo "* PASSWORD: vagrant"
+    echo "* USERNAME: $ADMIN_USER"
+    echo "* PASSWORD: $ADMIN_PASSWORD"
     echo "* K8s dashboard: http://`head -n1 VLAN_IPS`/api/v1/proxy/namespaces/kube-system/services/kubernetes-dashboard"
     echo "**************************************"
     echo "**************************************"
