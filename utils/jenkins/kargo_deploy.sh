@@ -49,15 +49,17 @@ done
 set +e
 current_slave=1
 deploy_args=""
+
+echo "Preparing SSH key..."
 if ! [ -f $WORKSPACE/id_rsa ]; then
     ssh-keygen -t rsa -f $WORKSPACE/id_rsa -N "" -q
 fi
 eval $(ssh-agent)
 ssh-add $WORKSPACE/id_rsa
 
+echo "Adding ssh key authentication to nodes..."
 for slaveip in ${SLAVE_IPS[@]}; do
-    echo "Adding ssh key authentication"
-    sshpass $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS -i $WORKSPACE/id_rsa $ADMIN_USER@${slaveip} -p 22
+    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS $ADMIN_USER@${slaveip} -p 22
 
     deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
     ((current_slave++))
