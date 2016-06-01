@@ -61,6 +61,10 @@ echo "Adding ssh key authentication to nodes..."
 for slaveip in ${SLAVE_IPS[@]}; do
     sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS $ADMIN_USER@${slaveip} -p 22
 
+    # FIXME(mattymo): underlay should set hostnames
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo hostnamectl set-hostname node{$current_slave}"
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sed -i 's/127.0.1.1.*/127.0.1.1 node${current_slave}/g' /etc/hosts"
+
     deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
     ((current_slave++))
 done
