@@ -2,7 +2,7 @@
 # will use values from this file
 
 master_image: solar-project/solar-minimal
-master_image_version: ">= 0.3.0.pre2"
+master_image_version: ">= 0.3.0.pre3"
 # 256 is enough, can be trimed down when needed
 master_ram: 350
 master_cpus: 1
