@@ -23,12 +23,11 @@ rm -rf logs/*
 
 ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python utils/jenkins/env.py create_env
 
-SLAVE_IPS=`ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_slaves_ips`
+SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_slaves_ips | tr -d "[],'"))
 ADMIN_IP=${SLAVE_IPS[0]}
 
 # Wait for all servers(grep only IP addresses):
-###for IP in `echo ${ADMIN_IP} ${SLAVE_IPS} |grep -oE '((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])'`; do
-for IP in `echo ${SLAVE_IPS} |grep -oE '((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])'`; do
+for IP in ${SLAVE_IPS[@]}; do
     elapsed_time=0
     master_wait_time=30
     while true; do
@@ -80,10 +79,6 @@ ssh $sshopts vagrant@$ADMIN_IP kargo prepare -y --nodes $deploy_args
 cat ~/.ssh/id_rsa | ssh $sshopts vagrant@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
 ssh $sshopts vagrant@$ADMIN_IP chmod 600 .ssh/id_rsa
 
-#remove after https://github.com/kubespray/kargo/pull/276
-echo "Applying hacks to kargo to get deployment working"
-ssh $sshopts vagrant@$ADMIN_IP "sed -e '/    - reload systemd/ s/^#*/#/' -i roles/kubernetes/node/handlers/main.yml"
-
 echo "Deploying k8s via kargo..."
 ssh $sshopts vagrant@$ADMIN_IP kargo deploy -y
 
@@ -92,7 +87,7 @@ deploy_res=$?
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
     rm -f VLAN_IPS
-    for IP in `echo ${SLAVE_IPS} |grep -oE '((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])'`; do
+    for IP in ${SLAVE_IPS[@]}; do
         bridged_iface_mac="`ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_bridged_iface_mac $IP`"
 
         sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} bash -s <<EOF >>VLAN_IPS
