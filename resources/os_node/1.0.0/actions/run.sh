@@ -9,6 +9,10 @@ if [[ ! "$os" == "Ubuntu" ]]; then
     sudo hostnamectl set-hostname --static "{{name}}"
 else
     if [[ "$os" == "Ubuntu" ]]; then
+        while fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
+            echo "waiting for dpkg lock"
+            sleep 1
+        done
         sudo apt-get install -y python ansible
         sudo hostname {{name}}
         sudo bash -c  "echo {{name}} > /etc/hostname"
