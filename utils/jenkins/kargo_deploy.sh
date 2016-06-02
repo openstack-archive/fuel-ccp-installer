@@ -87,7 +87,7 @@ cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .s
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
 echo "Deploying k8s via kargo..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo deploy -y
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo deploy -y -n calico
 
 deploy_res=$?
 
