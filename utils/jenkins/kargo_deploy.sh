@@ -86,8 +86,14 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --nodes $deploy_args
 cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
+if [ -n "$CUSTOM_YAML" ]; then
+    echo "Uploading custom YAML for deployment..."
+    echo -e "$CUSTOM_YAML" | ssh $SSH_OPTIONS $ADMIN_USER@ADMIN_IP "cat > kargo/custom.yaml"
+    custom_opts="--ansible-opts '-e \"@kargo/custom.yaml\"'"
+fi
+
 echo "Deploying k8s via kargo..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo deploy -y -n calico
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo deploy -y -n calico $custom_opts
 
 deploy_res=$?
 
