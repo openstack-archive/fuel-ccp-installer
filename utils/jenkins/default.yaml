@@ -1,7 +1,7 @@
 ---
 rack-01-node-params:
-  vcpu: 2
-  memory: 1024
+  vcpu: 6
+  memory: 8192
   boot:
     - hd
   volumes:
