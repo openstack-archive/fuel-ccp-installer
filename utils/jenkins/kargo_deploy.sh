@@ -62,7 +62,7 @@ for slaveip in ${SLAVE_IPS[@]}; do
     sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS $ADMIN_USER@${slaveip} -p 22
 
     # FIXME(mattymo): underlay should set hostnames
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo hostnamectl set-hostname node{$current_slave}"
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo hostnamectl set-hostname node${current_slave}"
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sed -i 's/127.0.1.1.*/127.0.1.1 node${current_slave}/g' /etc/hosts"
 
     # Workaround to disable ipv6 dns which can cause docker pull to fail
