@@ -65,6 +65,9 @@ for slaveip in ${SLAVE_IPS[@]}; do
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo hostnamectl set-hostname node{$current_slave}"
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sed -i 's/127.0.1.1.*/127.0.1.1 node${current_slave}/g' /etc/hosts"
 
+    # Workaround to disable ipv6 dns which can cause docker pull to fail
+    echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
+
     deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
     ((current_slave++))
 done
@@ -88,14 +91,21 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
-    echo -e "$CUSTOM_YAML" | ssh $SSH_OPTIONS $ADMIN_USER@ADMIN_IP "cat > kargo/custom.yaml"
+    echo -e "$CUSTOM_YAML" | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/custom.yaml"
     custom_opts="--ansible-opts '-e \"@kargo/custom.yaml\"'"
 fi
 
 echo "Deploying k8s via kargo..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo deploy -y -n calico $custom_opts
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo deploy -y $custom_opts
 
 deploy_res=$?
+
+echo "Setting up kubedns..."
+
+
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kpm deploy kube-system/kubedns --namespace=kube-system
+
 
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
