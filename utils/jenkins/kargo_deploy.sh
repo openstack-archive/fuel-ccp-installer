@@ -6,6 +6,7 @@ ADMIN_PASSWORD=vagrant
 ADMIN_USER=vagrant
 INSTALL_DIR=/home/vagrant/kargo-k8s
 
+WORKSPACE=${WORKSPACE:-.}
 ENV_NAME=${ENV_NAME:-kargo-example}
 SLAVES_COUNT=${SLAVES_COUNT:-0}
 CONF_PATH=${CONF_PATH:-utils/jenkins/default.yaml}
@@ -73,6 +74,7 @@ for slaveip in ${SLAVE_IPS[@]}; do
 done
 
 echo "Setting up required dependencies..."
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get update
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-setuptools python-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2'"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cffi>=1.6.0'"
@@ -100,12 +102,11 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sh -c \"kargo deploy -y $custom_opts\""
 
 deploy_res=$?
 
-echo "Setting up kubedns..."
-
-
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kpm deploy kube-system/kubedns --namespace=kube-system
-
+if [ "$deploy_res" -eq "0" ]; then
+    echo "Setting up kubedns..."
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
+fi
 
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
