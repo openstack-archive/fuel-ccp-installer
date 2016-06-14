@@ -14,7 +14,7 @@
     - lineinfile:
         dest: /etc/defaults
         regexp: "DOCKER_OPTS=.*"
-        line: DOCKER_OPTS="--bridge={{iface}} --iptables=false --ip-masq=false"
+        line: DOCKER_OPTS=""
       when: ansible_distribution == "Ubuntu"
     {% endif %}
     - service: name=docker.service enabled=yes state=restarted

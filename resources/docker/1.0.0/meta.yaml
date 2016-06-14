@@ -5,5 +5,5 @@ input:
     schema: str!
     value: null
   network_options:
-    schema: str
-    value:
+    schema: str!
+    value: true
