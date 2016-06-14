@@ -9,3 +9,8 @@ solar-resources
 
 # vim files
 *.swp
+
+# Deploy leftovers
+VLAN_IPS
+logs/*
+utils/packer/*/packer_cache/*
