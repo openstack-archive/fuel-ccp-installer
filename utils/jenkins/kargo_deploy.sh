@@ -8,7 +8,11 @@ ADMIN_USER=${ADMIN_USER:-vagrant}
 WORKSPACE=${WORKSPACE:-.}
 ENV_NAME=${ENV_NAME:-kargo-example}
 SLAVES_COUNT=${SLAVES_COUNT:-0}
-CONF_PATH=${CONF_PATH:-utils/jenkins/default.yaml}
+if [ "$VLAN_BRIDGE" ]; then
+    CONF_PATH=${CONF_PATH:-utils/jenkins/default30-kargo-bridge.yaml}
+else
+    CONF_PATH=${CONF_PATH:-utils/jenkins/default30-kargo.yaml}
+fi
 
 IMAGE_PATH=${IMAGE_PATH:-bootstrap/output-qemu/ubuntu1404}
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
@@ -38,7 +42,7 @@ for IP in ${SLAVE_IPS[@]}; do
     elapsed_time=0
     master_wait_time=30
     while true; do
-        report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} echo ok || echo not ready)
+        report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} -o PreferredAuthentications=password ${ADMIN_USER}@${IP} echo ok || echo not ready)
 
         if [ "${report}" = "ok" ]; then
             break
@@ -66,7 +70,7 @@ ssh-add $WORKSPACE/id_rsa
 
 echo "Adding ssh key authentication and labels to nodes..."
 for slaveip in ${SLAVE_IPS[@]}; do
-    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS $ADMIN_USER@${slaveip} -p 22
+    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
 
     # FIXME(mattymo): underlay should set hostnames
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo hostnamectl set-hostname node${current_slave}"

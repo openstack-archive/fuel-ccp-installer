@@ -1,0 +1,133 @@
+aliases:
+
+  dynamic_address_pool:
+   - &pool_default !os_env POOL_DEFAULT, 10.90.0.0/16:24
+
+  default_interface_model:
+   - &interface_model !os_env INTERFACE_MODEL, e1000
+
+template:
+  devops_settings:
+    env_name: !os_env ENV_NAME
+
+    address_pools:
+    # Network pools used by the environment
+
+      public-pool01:
+        net: *pool_default
+        params:
+          vlan_start: 1210
+          ip_reserved:
+            gateway: +1
+            l2_network_device: +1  # l2_network_device will get this IP address
+          ip_ranges:
+            dhcp: [+128, -32]
+            rack-01: [+2, +127]
+
+      storage-pool01:
+        net: *pool_default
+      management-pool01:
+        net: *pool_default
+      private-pool01:
+        net: *pool_default
+      local-pool01:
+        net: *pool_default
+
+    groups:
+     - name: default
+       driver:
+         name: devops.driver.libvirt.libvirt_driver
+         params:
+           connection_string: !os_env CONNECTION_STRING, qemu:///system
+           storage_pool_name: !os_env STORAGE_POOL_NAME, default
+           stp: False
+           hpet: False
+           use_host_cpu: !os_env DRIVER_USE_HOST_CPU, true
+
+       network_pools:  # Address pools for OpenStack networks.
+         # Actual names should be used for keys
+         # (the same as in Nailgun, for example)
+
+         public: public-pool01
+         storage: storage-pool01
+         management: management-pool01
+         private: private-pool01
+
+       l2_network_devices:  # Libvirt bridges. It is *NOT* Nailgun networks
+         public:
+           address_pool: public-pool01
+           dhcp: true
+           forward:
+             mode: nat
+
+         storage:
+           address_pool: storage-pool01
+           dhcp: false
+
+         management:
+           address_pool: management-pool01
+           dhcp: false
+
+         private:
+           address_pool: private-pool01
+           dhcp: false
+
+         local:
+           dhcp: false
+           forward:
+             mode: bridge
+           parent_iface:
+             phys_dev: !os_env VLAN_BRIDGE
+
+       nodes:
+        - name: slave-0
+          role: k8s-node
+          params:  &rack-01-slave-node-params
+            vcpu: !os_env SLAVE_NODE_CPU, 2
+            memory: !os_env SLAVE_NODE_MEMORY, 3072
+            boot:
+             - network
+             - hd
+            volumes:
+             - name: system
+               capacity: !os_env NODE_VOLUME_SIZE, 50
+               source_image: !os_env IMAGE_PATH
+               format: qcow2
+
+            # List of node interfaces
+            interfaces:
+             - label: iface0
+               l2_network_device: public
+               interface_model: *interface_model
+             - label: iface1
+               l2_network_device: private
+               interface_model: *interface_model
+             - label: iface2
+               l2_network_device: storage
+               interface_model: *interface_model
+             - label: iface3
+               l2_network_device: management
+               interface_model: *interface_model
+             - label: iface4
+               l2_network_device: local
+               interface_model: *interface_model
+            network_config:
+              iface0:
+                networks:
+                 - public
+              iface1:
+                networks:
+                 - private
+              iface2:
+                networks:
+                 - storage
+              iface3:
+                networks:
+                 - management
+
+        - name: slave-1
+          role: k8s-node
+          params: *rack-01-slave-node-params
+        - name: slave-2
+          role: k8s-node
+          params: *rack-01-slave-node-params

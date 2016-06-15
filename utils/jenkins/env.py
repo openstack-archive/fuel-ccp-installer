@@ -1,63 +1,33 @@
 # -*- coding: utf-8 -*-
 from copy import deepcopy
 import os
-import subprocess as sub
 import sys
-import yaml
 
+from devops.helpers.templates import yaml_template_load
 from devops.models import Environment
-
-
-def create_overlay_image(env_name, node_name, base_image):
-    overlay_image_path = 'tmp/{}_{}.qcow2'.format(env_name, node_name)
-    base_image = os.path.abspath(base_image)
-    if os.path.exists(overlay_image_path):
-        os.unlink(overlay_image_path)
-    try:
-        sub.call(['qemu-img', 'create', '-b', base_image, '-f', 'qcow2',
-                  overlay_image_path])
-    except sub.CalledProcessError as e:
-        sys.stdout.write(e.output)
-        raise
-    return overlay_image_path
 
 
 def create_config():
     env = os.environ
 
     conf_path = env['CONF_PATH']
-    with open(conf_path) as c:
-        conf = yaml.load(c.read())
+    conf = yaml_template_load(conf_path)
 
-    env_name = env['ENV_NAME']
-    image_path = env['IMAGE_PATH']
-    master_image_path = env.get('MASTER_IMAGE_PATH', None)
-    if master_image_path is None:
-        master_image_path = image_path
     slaves_count = int(env['SLAVES_COUNT'])
 
-    bridge = env.get('VLAN_BRIDGE', None)
+    group = conf['template']['devops_settings']['groups'][0]
+    defined = filter(lambda x: x['role'] == 'k8s-node',
+                     group['nodes'])
+    node_params = filter(lambda x: x['name'].endswith('slave-0'),
+                         group['nodes'])[0]['params']
 
-    conf['env_name'] = env_name
-    node_params = conf['rack-01-node-params']
+    for i in range(len(defined), slaves_count):
+        group['nodes'].append(
+            {'name': 'slave-{}'.format(i),
+             'role': 'k8s-node',
+             'params': deepcopy(node_params)})
 
-    group = conf['groups'][0]
-    for i in range(slaves_count):
-        group['nodes'].append({'name': 'slave-{}'.format(i), 'role': 'slave'})
-    for node in group['nodes']:
-        node['params'] = deepcopy(node_params)
-        if node['role'] == 'master':
-            path = master_image_path
-        else:
-            path = image_path
-        vol_path = create_overlay_image(env_name, node['name'], path)
-        node['params']['volumes'][0]['source_image'] = vol_path
-        if bridge:
-            interface = _get_free_eth_interface(node)
-            node['params']['interfaces'].append({'label': interface,
-                                                 'type': 'bridge',
-                                                 'bridge': bridge})
-    return {'template': {'devops_settings': conf}}
+    return conf
 
 
 def _get_free_eth_interface(node):
@@ -78,12 +48,12 @@ def get_env():
 
 
 def get_master_ip(env):
-    admin = env.get_node(role='master')
+    admin = env.get_node(name='solar')
     return admin.get_ip_address_by_network_name('public')
 
 
 def get_slave_ips(env):
-    slaves = env.get_nodes(role='slave')
+    slaves = env.get_nodes(role='k8s-node')
     ips = []
     for slave in slaves:
         ip = slave.get_ip_address_by_network_name('public').encode('utf-8')
@@ -96,9 +66,8 @@ def get_bridged_iface_mac(env, ip):
         ips = [iface.addresses[0].ip_address for iface in node.interfaces
                if iface.addresses]
         if ip in ips:
-            for iface in node.interfaces:
-                if iface.type == 'bridge':
-                    return iface.mac_address
+            iface = node.get_interface_by_network_name('local')
+            return iface.mac_address
 
 
 def define_from_config(conf):

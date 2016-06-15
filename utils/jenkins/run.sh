@@ -8,7 +8,11 @@ INSTALL_DIR=/home/vagrant/solar-k8s
 
 ENV_NAME=${ENV_NAME:-solar-example}
 SLAVES_COUNT=${SLAVES_COUNT:-0}
-CONF_PATH=${CONF_PATH:-utils/jenkins/default.yaml}
+if [ "$VLAN_BRIDGE" ]; then
+    CONF_PATH=${CONF_PATH:-utils/jenkins/default30-bridge.yaml}
+else
+    CONF_PATH=${CONF_PATH:-utils/jenkins/default30.yaml}
+fi
 
 IMAGE_PATH=${IMAGE_PATH:-bootstrap/output-qemu/ubuntu1404}
 TEST_SCRIPT=${TEST_SCRIPT:-/vagrant/examples/hosts_file/hosts.py}
@@ -16,7 +20,7 @@ DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
 SOLAR_DB_BACKEND=${SOLAR_DB_BACKEND:-riak}
 
-SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password"
 
 dos.py erase ${ENV_NAME} || true
 mkdir -p tmp
