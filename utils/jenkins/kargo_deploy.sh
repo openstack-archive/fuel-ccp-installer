@@ -2,9 +2,8 @@
 set -xe
 
 # for now we assume that master ip is 10.0.0.2 and slaves ips are 10.0.0.{3,4,5,...}
-ADMIN_PASSWORD=vagrant
-ADMIN_USER=vagrant
-INSTALL_DIR=/home/vagrant/kargo-k8s
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-vagrant}
+ADMIN_USER=${ADMIN_USER:-vagrant}
 
 WORKSPACE=${WORKSPACE:-.}
 ENV_NAME=${ENV_NAME:-kargo-example}
@@ -16,16 +15,22 @@ DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
 SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-dos.py erase ${ENV_NAME} || true
-mkdir -p tmp
 
-mkdir -p logs
-rm -rf logs/*
+mkdir -p tmp logs
 
-ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python utils/jenkins/env.py create_env
 
-SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_slaves_ips | tr -d "[],'"))
-ADMIN_IP=${SLAVE_IPS[0]}
+# Allow non-Jenkins script to predefine info
+if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
+    ENV_TYPE="fuel-devops"
+    dos.py erase ${ENV_NAME} || true
+    rm -rf logs/*
+    ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python utils/jenkins/env.py create_env
+
+    SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_slaves_ips | tr -d "[],'"))
+    ADMIN_IP=${SLAVE_IPS[0]}
+else
+    ENV_TYPE={ENV_TYPE:-other}
+fi
 
 # Wait for all servers(grep only IP addresses):
 for IP in ${SLAVE_IPS[@]}; do
@@ -139,14 +144,15 @@ set +x
 set -x
 fi
 
-
-if [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" != "1" ];then
-    dos.py erase ${ENV_NAME}
-else
-    if [ "${deploy_res}" -ne "0" ];then
-        dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
-        dos.py destroy ${ENV_NAME}
-        echo "To revert snapshot please run: dos.py revert ${ENV_NAME} ${ENV_NAME}.snapshot"
+if [[ "$ENV_TYPE" == "fuel-devops" ]]; then
+    if [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" != "1" ];then
+        dos.py erase ${ENV_NAME}
+    else
+        if [ "${deploy_res}" -ne "0" ];then
+            dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
+            dos.py destroy ${ENV_NAME}
+            echo "To revert snapshot please run: dos.py revert ${ENV_NAME} ${ENV_NAME}.snapshot"
+        fi
     fi
 fi
 
