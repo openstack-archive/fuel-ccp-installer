@@ -14,6 +14,7 @@ IMAGE_PATH=${IMAGE_PATH:-bootstrap/output-qemu/ubuntu1404}
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
 SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+VM_LABEL=${BUILD_TAG:-unknown}
 
 
 mkdir -p tmp logs
@@ -63,7 +64,7 @@ fi
 eval $(ssh-agent)
 ssh-add $WORKSPACE/id_rsa
 
-echo "Adding ssh key authentication to nodes..."
+echo "Adding ssh key authentication and labels to nodes..."
 for slaveip in ${SLAVE_IPS[@]}; do
     sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS $ADMIN_USER@${slaveip} -p 22
 
@@ -73,6 +74,9 @@ for slaveip in ${SLAVE_IPS[@]}; do
 
     # Workaround to disable ipv6 dns which can cause docker pull to fail
     echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
+
+    # Add VM label:
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/vagrant/vm_label"
 
     deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
     ((current_slave++))
