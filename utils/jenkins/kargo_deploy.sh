@@ -38,7 +38,9 @@ if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
     ADMIN_IP=${SLAVE_IPS[0]}
 else
     ENV_TYPE={ENV_TYPE:-other}
+    SLAVE_IPS=( $SLAVE_IPS )
 fi
+
 
 # Wait for all servers(grep only IP addresses):
 for IP in ${SLAVE_IPS[@]}; do
