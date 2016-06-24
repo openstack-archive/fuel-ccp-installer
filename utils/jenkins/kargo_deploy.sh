@@ -216,6 +216,26 @@ set +x
 set -x
 fi
 
+cubeip=`cat VLAN_IPS | head -n 1`
+
+COUNTER=0
+while [ $COUNTER -lt 100 ]; do
+    nc -z -v -w5 $cubeip 8080
+    if [ $? -ne 0 ]; then
+        echo "Waiting for k8s up"
+    else
+        break
+    fi
+    sleep 1
+    ((COUNTER++))
+done
+
+echo "Deploying registry..."
+cat ./registry/registry-pod.yaml | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat - > registry-pod.yaml"
+echo -e ./registry/service-registry.yaml | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat - > service-registry.yaml"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "kubectl create -f registry-pod.yaml"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "kubectl create -f service-registry.yaml"
+
 if [[ "$ENV_TYPE" == "fuel-devops" ]]; then
     if [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" != "1" ];then
         dos.py erase ${ENV_NAME}
