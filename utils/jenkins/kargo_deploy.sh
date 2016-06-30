@@ -119,7 +119,22 @@ if [ "$deploy_res" -eq "0" ]; then
     echo "Setting up kubedns..."
     ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
     ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
+    for waiting in `seq 1 10`; do
+        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running && break
+        if [ $waiting -lt 10 ]; then
+            echo "Waiting for kubedns to be up..."
+            sleep 5
+        else
+            echo "Kubedns did not come up in time"
+            deploy_res=1
+        fi
+    done
+
 fi
+
+# Test cluster network connectivity
+. utils/kargo/test_networking.sh
+test_networking
 
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
