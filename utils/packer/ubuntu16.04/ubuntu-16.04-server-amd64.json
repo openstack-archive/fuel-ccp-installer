@@ -16,11 +16,9 @@
 
             "type": "qemu",
             "accelerator": "kvm",
-            "disk_interface": "virtio-scsi",
             "disk_size": "{{ user `disk_size`}}",
             "disk_cache": "unsafe",
             "disk_discard": "unmap",
-            "disk_compression": true,
             "format": "qcow2",
             "headless": true,
 
