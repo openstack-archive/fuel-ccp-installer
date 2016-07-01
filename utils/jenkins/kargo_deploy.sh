@@ -79,6 +79,10 @@ for slaveip in ${SLAVE_IPS[@]}; do
     # Workaround to disable ipv6 dns which can cause docker pull to fail
     echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
 
+    # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo apt-get remove -y resolvconf"
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo rm -rf /etc/resolvconf"
+
     # Add VM label:
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/vagrant/vm_label"
 
