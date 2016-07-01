@@ -1,5 +1,6 @@
 {
     "variables": {
+        "name": "debian-85-jessie",
         "user": "vagrant",
         "password": "vagrant",
         "disk_size": "100000"
@@ -8,7 +9,7 @@
     "builders":
     [
         {
-            "name": "debian-85-jessie",
+            "name": "{{user `name`}}",
 
             "iso_checksum_type": "none",
             "iso_url": "http://cdimage.debian.org/cdimage/release/8.5.0/amd64/iso-cd/debian-8.5.0-amd64-netinst.iso",
@@ -59,6 +60,13 @@
                 "scripts/setup.sh",
                 "scripts/cleanup.sh"
             ]
+        }
+    ],
+
+    "post-processors": [
+        {
+            "type": "shell-local",
+            "inline": ["qemu-img convert -c -f qcow2 -O qcow2 -o cluster_size=2M ./output-{{user `name`}}/packer-{{user `name`}} ./output-{{user `name`}}/packer-{{user `name`}}.qcow2"]
         }
     ]
 }

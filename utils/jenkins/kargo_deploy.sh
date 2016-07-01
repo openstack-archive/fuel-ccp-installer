@@ -15,6 +15,9 @@ else
 fi
 
 IMAGE_PATH=${IMAGE_PATH:-bootstrap/output-qemu/ubuntu1404}
+# detect OS type from the image name, assume debian by default
+NODE_BASE_OS=$(basename ${IMAGE_PATH} | grep -io -e ubuntu -e debian)
+NODE_BASE_OS="${NODE_BASE_OS:-debian}"
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
 SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -100,12 +103,27 @@ done
 
 echo "Setting up required dependencies..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get update
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-setuptools python-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2'"
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cffi>=1.6.0'"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo easy_install setuptools"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2 'cffi>=1.6.0'"
 
 echo "Setting up ansible..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible;apt-get update;apt-get install -y ansible"'
+case $NODE_BASE_OS in
+    ubuntu)
+        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible; apt-get update"'
+    ;;
+    debian)
+        for slaveip in ${SLAVE_IPS[@]}; do
+            scp $SSH_OPTIONS ./utils/jenkins/files/debian_testing_repo.list $ADMIN_USER@$slaveip:/tmp/testing.list
+            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/testing.list /etc/apt/sources.list.d/testing.list"
+            scp $SSH_OPTIONS ./utils/jenkins/files/debian_pinning $ADMIN_USER@$slaveip:/tmp/testing
+            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/testing /etc/apt/preferences.d/testing"
+            echo "Upgrading setuptools"
+            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip 'sudo sh -c "apt-get update; apt-get -y install --only-upgrade python-setuptools"'
+        done
+    ;;
+esac
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-get install -y ansible"'
 
 echo "Setting up kargo-cli..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
@@ -165,7 +183,7 @@ if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUC
         bridged_iface_mac="`ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_bridged_iface_mac $IP`"
 
         sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} bash -s <<EOF >>VLAN_IPS
-bridged_iface=\$(ifconfig -a|awk -v mac="$bridged_iface_mac" '\$0 ~ mac {print \$1}' 'RS=\n\n')
+bridged_iface=\$(/sbin/ifconfig -a|awk -v mac="$bridged_iface_mac" '\$0 ~ mac {print \$1}' 'RS=\n\n')
 sudo ip route del default
 sudo dhclient "\${bridged_iface}"
 echo \$(ip addr list |grep ${bridged_iface_mac} -A 1 |grep 'inet ' |cut -d' ' -f6| cut -d/ -f1)
