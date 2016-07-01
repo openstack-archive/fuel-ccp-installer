@@ -3,9 +3,11 @@
 # configure serial console:
 cat >> /etc/default/grub <<EOF
 GRUB_TERMINAL=serial
-GRUB_CMDLINE_LINUX='console=tty0 console=ttyS0,19200n8'
+# Cgroups fix for debian 8
+GRUB_CMDLINE_LINUX='console=tty0 console=ttyS0,19200n8 cgroup_enable=memory swapaccount=1'
 GRUB_SERIAL_COMMAND="serial --speed=19200 --unit=0 --word=8 --parity=no --stop=1"
 EOF
+update-grub2
 
 # Set up sudo
 echo 'vagrant ALL=NOPASSWD:ALL' > /etc/sudoers.d/vagrant
