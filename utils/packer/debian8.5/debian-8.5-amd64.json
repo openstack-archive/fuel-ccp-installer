@@ -1,0 +1,64 @@
+{
+    "variables": {
+        "user": "vagrant",
+        "password": "vagrant",
+        "disk_size": "100000"
+    },
+
+    "builders":
+    [
+        {
+            "name": "debian-85-jessie",
+
+            "iso_checksum_type": "none",
+            "iso_url": "http://cdimage.debian.org/cdimage/release/8.5.0/amd64/iso-cd/debian-8.5.0-amd64-netinst.iso",
+            "iso_checksum": "ad4e8c27c561ad8248d5ebc1d36eb172f884057bfeb2c22ead823f59fa8c3dff",
+            "iso_checksum_type": "SHA256",
+
+            "type": "qemu",
+            "accelerator": "kvm",
+            "disk_size": "{{ user `disk_size`}}",
+            "disk_cache": "unsafe",
+            "disk_discard": "unmap",
+            "format": "qcow2",
+            "headless": true,
+
+            "http_directory": "http",
+
+            "ssh_username": "{{user `user`}}",
+            "ssh_password": "{{user `password`}}",
+            "ssh_wait_timeout": "10m",
+            "shutdown_command": "echo '{{user `password`}}'|sudo -S shutdown -P now",
+
+            "boot_wait": "10s",
+            "boot_command": [
+              "<esc><wait>",
+              "install <wait>",
+              "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed_jessie.cfg <wait>",
+              "debian-installer=en_US <wait>",
+              "auto=true <wait>",
+              "locale=en_US <wait>",
+              "kbd-chooser/method=us <wait>",
+              "keyboard-configuration/xkb-keymap=us <wait>",
+              "fb=false <wait>",
+              "hostname=debian85 <wait>",
+              "domain=debian85 <wait>",
+              "console-setup/ask_detect=false <wait>",
+              "console-keymaps-at/keymap=us <wait>",
+              "<enter><wait>"
+            ]
+        }
+    ],
+
+    "provisioners": [
+        {
+            "type": "shell",
+            "execute_command": "echo '{{user `password`}}' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
+            "scripts": [
+                "scripts/packages.sh",
+                "scripts/setup.sh",
+                "scripts/cleanup.sh"
+            ]
+        }
+    ]
+}

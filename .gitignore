@@ -14,3 +14,4 @@ solar-resources
 VLAN_IPS
 logs/*
 utils/packer/*/packer_cache/*
+utils/packer/*/output*
