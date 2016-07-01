@@ -63,3 +63,7 @@ EOF
 
 # Set vim as a default editor
 update-alternatives --set editor /usr/bin/vim.basic
+
+# Cgroups for debian 8
+sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"/g' \
+  /etc/default/grub && update-grub2
