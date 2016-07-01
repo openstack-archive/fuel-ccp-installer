@@ -20,6 +20,9 @@ DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 VM_LABEL=${BUILD_TAG:-unknown}
 
+KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
+KARGO_COMMIT=${KARGO_COMMIT:-master}
+
 
 mkdir -p tmp logs
 
@@ -99,23 +102,31 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cffi>=1.6.0'"
 echo "Setting up ansible..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible;apt-get update;apt-get install -y ansible"'
 
-echo "Setting up kargo..."
+echo "Setting up kargo-cli..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup.py install'"
 
+echo "Checking out kargo playbook..."
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone $KARGO_REPO
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sh -c "cd kargo && git checkout $KARGO_COMMIT"
+
 echo "Preparing kargo node..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --nodes $deploy_args
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --noclone --nodes $deploy_args
 cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
     echo -e "$CUSTOM_YAML" | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/custom.yaml"
-    custom_opts='--ansible-opts=\"-e @kargo/custom.yaml\"'
+    custom_opts="-e @kargo/custom.yaml"
 fi
 
-echo "Deploying k8s via kargo..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sh -c \"kargo deploy -y $custom_opts\""
+
+echo "Deploying k8s via ansible..."
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
+    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u vagrant -b \
+    --become-user=root -i /home/vagrant/kargo/inventory/inventory.cfg \
+    /home/vagrant/kargo/cluster.yml $custom_opts
 
 deploy_res=$?
 
