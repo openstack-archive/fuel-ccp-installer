@@ -84,6 +84,7 @@ for slaveip in ${SLAVE_IPS[@]}; do
 
     # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo apt-get remove -y resolvconf"
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /run/resolvconf/resolv.conf /etc/resolv.conf"
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo rm -rf /etc/resolvconf"
 
     # Add VM label:
