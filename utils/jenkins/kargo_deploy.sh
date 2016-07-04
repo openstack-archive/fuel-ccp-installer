@@ -187,6 +187,7 @@ if [[ "$ENV_TYPE" == "fuel-devops" ]]; then
         dos.py erase ${ENV_NAME}
     else
         if [ "${deploy_res}" -ne "0" ];then
+            dos.py suspend ${ENV_NAME}
             dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
             dos.py destroy ${ENV_NAME}
             echo "To revert snapshot please run: dos.py revert ${ENV_NAME} ${ENV_NAME}.snapshot"
