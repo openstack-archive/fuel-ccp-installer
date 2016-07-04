@@ -67,6 +67,8 @@ deploy_args=""
 echo "Preparing SSH key..."
 if ! [ -f $WORKSPACE/id_rsa ]; then
     ssh-keygen -t rsa -f $WORKSPACE/id_rsa -N "" -q
+    chmod 600 "${WORKSPACE}/id_rsa*"
+    test -f ~/.ssh/config && SSH_OPTIONS="${SSH_OPTIONS} -F /dev/null"
 fi
 eval $(ssh-agent)
 ssh-add $WORKSPACE/id_rsa
