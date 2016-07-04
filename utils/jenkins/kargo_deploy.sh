@@ -105,6 +105,8 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:an
 
 echo "Setting up kargo-cli..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
+# Workaround for kargo prepare bug
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && git checkout 4fabe51301ba805f57024d5a511c78f58b6d9aa9'"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup.py install'"
 
 echo "Checking out kargo playbook..."
