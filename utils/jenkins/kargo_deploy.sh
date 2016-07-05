@@ -104,7 +104,7 @@ done
 
 echo "Setting up required dependencies..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get update
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-dev python3-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo easy_install setuptools"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2 'cffi>=1.6.0'"
 
