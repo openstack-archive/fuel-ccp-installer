@@ -9,9 +9,9 @@ WORKSPACE=${WORKSPACE:-.}
 ENV_NAME=${ENV_NAME:-kargo-example}
 SLAVES_COUNT=${SLAVES_COUNT:-0}
 if [ "$VLAN_BRIDGE" ]; then
-    CONF_PATH=${CONF_PATH:-utils/jenkins/default30-kargo-bridge.yaml}
+    CONF_PATH=${CONF_PATH:-${BASH_SOURCE%/*}/default30-kargo-bridge.yaml}
 else
-    CONF_PATH=${CONF_PATH:-utils/jenkins/default30-kargo.yaml}
+    CONF_PATH=${CONF_PATH:-${BASH_SOURCE%/*}/default30-kargo.yaml}
 fi
 
 IMAGE_PATH=${IMAGE_PATH:-bootstrap/output-qemu/ubuntu1404}
@@ -32,9 +32,9 @@ if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
     ENV_TYPE="fuel-devops"
     dos.py erase ${ENV_NAME} || true
     rm -rf logs/*
-    ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python utils/jenkins/env.py create_env
+    ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python ${BASH_SOURCE%/*}/env.py create_env
 
-    SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_slaves_ips | tr -d "[],'"))
+    SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_slaves_ips | tr -d "[],'"))
     ADMIN_IP=${SLAVE_IPS[0]}
 else
     ENV_TYPE={ENV_TYPE:-other}
@@ -92,7 +92,7 @@ for slaveip in ${SLAVE_IPS[@]}; do
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo rm -rf /etc/resolvconf"
 
     # Add VM label:
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/vagrant/vm_label"
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
 
     deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
     ((current_slave++))
@@ -131,9 +131,9 @@ fi
 
 echo "Deploying k8s via ansible..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
-    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u vagrant -b \
-    --become-user=root -i /home/vagrant/kargo/inventory/inventory.cfg \
-    /home/vagrant/kargo/cluster.yml $custom_opts
+    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
+    /home/${ADMIN_USER}/kargo/cluster.yml $custom_opts
 
 deploy_res=$?
 
@@ -141,9 +141,10 @@ if [ "$deploy_res" -eq "0" ]; then
     echo "Setting up kubedns..."
     ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
     ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
-    for waiting in `seq 1 10`; do
+    count=26
+    for waiting in `seq 1 $count`; do
         ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running && break
-        if [ $waiting -lt 10 ]; then
+        if [ $waiting -lt $count ]; then
             echo "Waiting for kubedns to be up..."
             sleep 5
         else
@@ -155,14 +156,14 @@ if [ "$deploy_res" -eq "0" ]; then
 fi
 
 # Test cluster network connectivity
-. utils/kargo/test_networking.sh
+. ${BASH_SOURCE%/*}/../kargo/test_networking.sh
 test_networking
 
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
     rm -f VLAN_IPS
     for IP in ${SLAVE_IPS[@]}; do
-        bridged_iface_mac="`ENV_NAME=${ENV_NAME} python utils/jenkins/env.py get_bridged_iface_mac $IP`"
+        bridged_iface_mac="`ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_bridged_iface_mac $IP`"
 
         sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} bash -s <<EOF >>VLAN_IPS
 bridged_iface=\$(ifconfig -a|awk -v mac="$bridged_iface_mac" '\$0 ~ mac {print \$1}' 'RS=\n\n')
