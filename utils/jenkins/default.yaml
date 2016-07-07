@@ -98,5 +98,5 @@ groups:
        address_pool: management-pool01
 
    nodes:
-    - name: solar
+    - name: fuel-ccp
       role: master

@@ -48,7 +48,7 @@ def get_env():
 
 
 def get_master_ip(env):
-    admin = env.get_node(name='solar')
+    admin = env.get_node(name='fuel-ccp')
     return admin.get_ip_address_by_network_name('public')
 
 
