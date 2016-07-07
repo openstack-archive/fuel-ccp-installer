@@ -1,9 +1,0 @@
-handler: ansible
-version: 1.0.0
-input:
-  iface:
-    schema: str!
-    value: null
-  network_options:
-    schema: str!
-    value: true
