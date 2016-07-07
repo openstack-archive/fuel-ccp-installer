@@ -3,6 +3,10 @@
 # C extensions
 *.so
 
+# Artifacts
+utils/packer/*/packer_cache/*
+utils/packer/*/output*
+
 # Packages
 *.egg*
 *.egg-info
@@ -44,6 +48,7 @@ output/*/index.html
 
 # Sphinx
 doc/build
+publish-doc
 
 # pbr generates these
 AUTHORS

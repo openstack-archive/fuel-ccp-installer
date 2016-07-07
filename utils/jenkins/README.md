@@ -9,7 +9,7 @@ django-admin.py syncdb
 django-admin.py migrate
 ```
 
-To test examples run one of available test scripts. You need to run it from solar main dir, for example:
+To test examples run one of available test scripts. You need to run it from main dir, for example:
 
 ```
 ./utils/jenkins/run_hosts_example.sh
