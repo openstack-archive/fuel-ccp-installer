@@ -6,6 +6,7 @@ import re
 
 from netaddr import IPAddress
 import yaml
+import pbr.version
 
 from solar.core.resource import composer as cr
 from solar.core.resource import resource as rs
@@ -16,6 +17,8 @@ DEFAULT_MASTER_NODE_RESOURCE_NAME = 'kube-node-master'
 MASTER_NODE_RESOURCE_NAME = None
 CONFIG_NAME = 'config.yaml'
 DEFAULT_CONFIG_NAME = 'config.yaml.sample'
+
+version_info = pbr.version.VersionInfo('Fuel CCP installer')
 
 
 def create_config(global_config):

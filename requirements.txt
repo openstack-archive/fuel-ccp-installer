@@ -1,1 +1,5 @@
+argparse
 netaddr
+pbr>=1.6
+six
+solar==0.2.1

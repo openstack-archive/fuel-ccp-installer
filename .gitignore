@@ -15,3 +15,16 @@ VLAN_IPS
 logs/*
 utils/packer/*/packer_cache/*
 utils/packer/*/output*
+
+*egg/
+*.egg-info
+.venv
+*.pyc
+build
+publish-docs
+docs/_build
+docs/source/*log
+.tox
+ChangeLog
+AUTHORS
+.coverage
