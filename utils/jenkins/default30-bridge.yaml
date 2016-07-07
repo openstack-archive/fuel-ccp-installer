@@ -80,8 +80,8 @@ template:
              phys_dev: !os_env VLAN_BRIDGE
 
        nodes:
-        - name: solar        # Custom name of VM for Fuel admin node
-          role: solar  # Fixed role for Fuel master node properties
+        - name: fuel-ccp # Custom name of VM for Fuel admin node
+          role: fuel-ccp # Fixed role for Fuel master node properties
           params:
             vcpu: !os_env ADMIN_NODE_CPU, 2
             memory: !os_env ADMIN_NODE_MEMORY, 3072
