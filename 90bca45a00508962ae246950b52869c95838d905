@@ -1,0 +1,10 @@
+Code-Review+2: Matthew Mosesohn <mmosesohn@mirantis.com>
+Code-Review+1: Proskurin Kirill <kproskurin@mirantis.com>
+Code-Review-1: Aleksandr Mogylchenko <amogylchenko@mirantis.com>
+Workflow+1: Matthew Mosesohn <mmosesohn@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 08 Jul 2016 08:41:03 +0000
+Reviewed-on: https://review.openstack.org/338850
+Project: openstack/fuel-ccp-installer
+Branch: refs/heads/master
