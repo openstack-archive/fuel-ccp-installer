@@ -21,6 +21,7 @@ NODE_BASE_OS="${NODE_BASE_OS:-debian}"
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
 SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+SSH_OPTIONS_COPYID=$SSH_OPTIONS
 VM_LABEL=${BUILD_TAG:-unknown}
 
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
@@ -80,7 +81,7 @@ ssh-add $WORKSPACE/id_rsa
 
 echo "Adding ssh key authentication and labels to nodes..."
 for slaveip in ${SLAVE_IPS[@]}; do
-    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
+    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
 
     # FIXME(mattymo): underlay should set hostnames
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo hostnamectl set-hostname node${current_slave}"
