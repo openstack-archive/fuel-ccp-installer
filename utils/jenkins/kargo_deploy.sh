@@ -91,7 +91,7 @@ for slaveip in ${SLAVE_IPS[@]}; do
     echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
 
     # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo apt-get remove -y resolvconf"
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y resolvconf"
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /run/resolvconf/resolv.conf /etc/resolv.conf"
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo rm -rf /etc/resolvconf"
 
@@ -106,7 +106,7 @@ echo "Setting up required dependencies..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get update
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo easy_install setuptools"
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2 'cffi>=1.6.0'"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2' 'cffi>=1.6.0'"
 
 echo "Setting up ansible..."
 case $NODE_BASE_OS in
