@@ -134,7 +134,7 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup
 
 echo "Checking out kargo playbook..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone $KARGO_REPO
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sh -c "cd kargo && git checkout $KARGO_COMMIT"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cd kargo && git checkout $KARGO_COMMIT"
 
 echo "Preparing kargo node..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --noclone --nodes $deploy_args
