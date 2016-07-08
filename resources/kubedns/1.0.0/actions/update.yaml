@@ -1,8 +1,0 @@
-- hosts: [{{host}}]
-  become: yes
-  tasks:
-    - template:
-        src: {{templates_dir}}/skydns.tmpl
-        dest: /tmp/skydns.yaml
-    - shell: kubectl remove -f /tmp/skydns.yaml
-    - shell: kubectl create -f /tmp/skydns.yaml
