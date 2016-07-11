@@ -1,0 +1,27 @@
+[all]
+node1 ip
+node2 ip
+node3 ip
+
+[kube-master]
+node1
+node2
+
+[etcd]
+node1
+node2
+node3
+
+[etcd-proxy]
+node1
+node2
+node3
+
+[kube-node]
+node1
+node2
+node3
+
+[k8s-cluster:children]
+kube-node
+kube-master

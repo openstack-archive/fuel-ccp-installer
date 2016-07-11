@@ -26,6 +26,7 @@ VM_LABEL=${BUILD_TAG:-unknown}
 
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
 KARGO_COMMIT=${KARGO_COMMIT:-master}
+KARGO_CLI="${KARGO_CLI:-true}"
 
 
 mkdir -p tmp logs
@@ -80,6 +81,9 @@ eval $(ssh-agent)
 ssh-add $WORKSPACE/id_rsa
 
 echo "Adding ssh key authentication and labels to nodes..."
+TMPFILE=$(mktemp /tmp/tmp.XXXXXXXXXX)
+trap 'rm -rf ${TMPFILE}' EXIT INT HUP
+cat ${BASH_SOURCE%/*}/files/inventory > ${TMPFILE}
 for slaveip in ${SLAVE_IPS[@]}; do
     sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
 
@@ -98,7 +102,11 @@ for slaveip in ${SLAVE_IPS[@]}; do
     # Add VM label:
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
 
-    deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
+    if [ "${KARGO_CLI}" = "true" ]; then
+        deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
+    else
+        sed -i "s/node${current_slave} ip/node${current_slave} ansible_ssh_host=${slaveip} ip=${slaveip}/g" ${TMPFILE}
+    fi
     ((current_slave++))
 done
 
@@ -126,18 +134,27 @@ case $NODE_BASE_OS in
 esac
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-get install -y ansible"'
 
-echo "Setting up kargo-cli..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
-# Workaround for kargo prepare bug
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && git checkout 4fabe51301ba805f57024d5a511c78f58b6d9aa9'"
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup.py install'"
-
 echo "Checking out kargo playbook..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone $KARGO_REPO
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sh -c 'cd kargo && git checkout $KARGO_COMMIT'"
 
-echo "Preparing kargo node..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --noclone --nodes $deploy_args
+if [ "${KARGO_CLI}" = "true" ]; then
+    echo "Setting up kargo-cli..."
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
+    # Workaround for kargo prepare bug
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && git checkout 4fabe51301ba805f57024d5a511c78f58b6d9aa9'"
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup.py install'"
+
+    echo "Preparing kargo node..."
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --noclone --nodes $deploy_args
+    INVENTORY="/home/${ADMIN_USER}/kargo/inventory/inventory.cfg"
+else
+    scp $SSH_OPTIONS ${TMPFILE} $ADMIN_USER@$ADMIN_IP:/tmp/inventory
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo cp -f /tmp/inventory /etc/ansible/hosts"
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo mkdir -p /etc/ansible/group_vars/"
+    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo cp -f /home/${ADMIN_USER}/kargo/inventory/group_vars/all.yml /etc/ansible/group_vars/"
+    INVENTORY="/etc/ansible/hosts"
+fi
 cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
@@ -151,7 +168,7 @@ fi
 echo "Deploying k8s via ansible..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
+    --become-user=root -i ${INVENTORY} \
     /home/${ADMIN_USER}/kargo/cluster.yml $custom_opts
 
 deploy_res=$?
