@@ -8,8 +8,12 @@ test_networking() {
     #ADMIN_IP="10.90.2.4"
 
     if [[ "$SLAVE_IPS" == "changeme" || "$ADMIN_IP" == "changeme" ]];then
-        echo "Please set variables SLAVE_IPS and ADMIN_IP."
-        return 1
+        SLAVE_IPS=($(kubectl get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}'))
+        ADMIN_IP=${SLAVE_IPS[1]}
+        if [ -z "$SLAVE_IPS" ]; then
+            echo "Unable to determine k8s nodes. Please set variables SLAVE_IPS and ADMIN_IP."
+            return 1
+        fi
     fi
 
     ADMIN_USER="vagrant"
@@ -80,4 +84,7 @@ test_networking() {
         echo "  Container internal DNS lookup (via kubedns): ${container_hostnet_dns_works[$node]}"
     done
 }
+
+#Run test_networking if not sourced
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] || test_networking $@
 

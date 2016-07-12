@@ -174,9 +174,16 @@ if [ "$deploy_res" -eq "0" ]; then
 
 fi
 
-# Test cluster network connectivity
-. ${BASH_SOURCE%/*}/../kargo/test_networking.sh
-test_networking
+if [ "$deploy_res" -eq "0" ]; then
+    echo "Testing network connectivity..."
+    . ${BASH_SOURCE%/*}/../kargo/test_networking.sh
+    test_networking
+    deploy_res=$?
+    if [ "$deploy_res" -eq "0" ]; then
+        echo "Copying connectivity script to node..."
+        scp $SSH_OPTIONS ./utils/kargo/test_networking.sh $ADMIN_USER@$ADMIN_IP:test_networking.sh
+    fi
+fi
 
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
