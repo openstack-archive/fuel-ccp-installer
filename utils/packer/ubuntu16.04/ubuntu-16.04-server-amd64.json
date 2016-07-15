@@ -29,7 +29,7 @@
             "ssh_wait_timeout": "10m",
             "shutdown_command": "echo '{{user `password`}}'|sudo -S shutdown -P now",
 
-            "boot_wait": "3s",
+            "boot_wait": "10s",
             "boot_command": [
                 "<esc><f6><esc>",
                 "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
