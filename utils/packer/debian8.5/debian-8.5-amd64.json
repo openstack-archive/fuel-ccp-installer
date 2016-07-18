@@ -1,6 +1,7 @@
 {
     "variables": {
         "name": "debian-85-jessie",
+        "version": "0.1.0",
         "user": "vagrant",
         "password": "vagrant",
         "disk_size": "100000"
@@ -63,9 +64,27 @@
     ],
 
     "post-processors": [
-        {
-            "type": "shell-local",
-            "inline": ["qemu-img convert -c -f qcow2 -O qcow2 -o cluster_size=2M ./output-{{user `name`}}/packer-{{user `name`}} ./output-{{user `name`}}/packer-{{user `name`}}.qcow2"]
-        }
+        [
+            {
+                "type": "shell-local",
+                "inline": ["qemu-img convert -c -f qcow2 -O qcow2 -o cluster_size=2M ./output-{{user `name`}}/packer-{{user `name`}} ./output-{{user `name`}}/packer-{{user `name`}}.qcow2"]
+            },
+            {
+                "type": "vagrant",
+                "keep_input_artifact": false
+            },
+            {
+                "type": "atlas",
+                "only": ["qemu"],
+                "artifact": "fuel-ccp-installer/{{user `name`}}-k8s",
+                "artifact_type": "vagrant.box",
+                "metadata": {
+                    "provider": "libvirt",
+                    "version": "{{ user `version` }}",
+                    "created_at": "{{timestamp}}",
+                    "description": "{{user `name`}} K8s"
+                }
+            }
+        ]
     ]
 }
