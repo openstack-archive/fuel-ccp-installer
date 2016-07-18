@@ -33,6 +33,7 @@ cover/
 nosetests.xml
 .testrepository
 .venv
+.vagrant/
 
 # Translations
 *.mo
