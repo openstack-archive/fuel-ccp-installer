@@ -12,6 +12,7 @@ python-pip
 git-review
 python-tox
 screen
+sshpass
 tmux
 "
 #PACKAGES="${PACKAGES} docker-engine"
