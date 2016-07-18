@@ -1,0 +1,28 @@
+# copy it to vagrant-settings.yaml then Vagrantfile
+# will use values from this file
+
+# Nodes config
+num_instances: 3
+instance_name_prefix: "node"
+box: "adidenko/ubuntu-1604-k8s"
+vm_gui: "false"
+vm_memory: 2048
+vm_cpus: 1
+
+# A list of forwarded ports. Example:
+#forwarded_ports:
+#  - x
+#  - y
+
+# Networking config
+subnet_prefix: "172.17"
+
+# Kargo config for a K8s cluster
+kube_version: "v1.3.0"
+#kargo_repo:
+#kargo_commit:
+cloud_provider: "generic"
+kube_proxy_mode: "iptables"
+kube_network_plugin: "calico"
+etcd_deployment_type: "host"
+kube_hostpath_dynamic_provisioner: "true"
