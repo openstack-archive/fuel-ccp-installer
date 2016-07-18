@@ -49,22 +49,14 @@ template:
          private: private-pool01
 
        l2_network_devices:  # Libvirt bridges. It is *NOT* Nailgun networks
-         public:
-           address_pool: public-pool01
-           dhcp: true
+         private:
+           address_pool: private-pool01
+           dhcp: dhcp
            forward:
              mode: nat
 
-         storage:
-           address_pool: storage-pool01
-           dhcp: false
-
-         management:
-           address_pool: management-pool01
-           dhcp: false
-
-         private:
-           address_pool: private-pool01
+         neutron:
+           address_pool: neutron-pool01
            dhcp: false
 
        nodes:
@@ -84,30 +76,18 @@ template:
 
             interfaces:
              - label: iface0
-               l2_network_device: public
-               interface_model: *interface_model
-             - label: iface1
                l2_network_device: private
                interface_model: *interface_model
              - label: iface2
-               l2_network_device: storage
-               interface_model: *interface_model
-             - label: iface3
-               l2_network_device: management
+               l2_network_device: neutron
                interface_model: *interface_model
             network_config:
               iface0:
                 networks:
-                 - public
-              iface1:
-                networks:
                  - private
               iface2:
                 networks:
-                 - storage
-              iface3:
-                networks:
-                 - management
+                 - neutron
 
         - name: slave-1
           role: k8s-node

@@ -13,7 +13,7 @@ template:
     address_pools:
     # Network pools used by the environment
 
-      public-pool01:
+      private-pool01:
         net: *pool_default
         params:
           vlan_start: 1210
@@ -24,13 +24,9 @@ template:
             dhcp: [+128, -32]
             rack-01: [+2, +127]
 
-      storage-pool01:
+      public-pool01:
         net: *pool_default
-      management-pool01:
-        net: *pool_default
-      private-pool01:
-        net: *pool_default
-      local-pool01:
+      neutron-pool01:
         net: *pool_default
 
     groups:
@@ -48,36 +44,27 @@ template:
          # Actual names should be used for keys
          # (the same as in Nailgun, for example)
 
-         public: public-pool01
-         storage: storage-pool01
-         management: management-pool01
          private: private-pool01
+         public: public-pool01
+         neutron: neutron-pool01
 
        l2_network_devices:  # Libvirt bridges. It is *NOT* Nailgun networks
-         public:
-           address_pool: public-pool01
-           dhcp: true
+         private:
+           address_pool: private-pool01
+           dhcp: dhcp
            forward:
              mode: nat
 
-         storage:
-           address_pool: storage-pool01
-           dhcp: false
-
-         management:
-           address_pool: management-pool01
-           dhcp: false
-
-         private:
-           address_pool: private-pool01
-           dhcp: false
-
-         local:
+         public:
            dhcp: false
            forward:
              mode: bridge
            parent_iface:
              phys_dev: !os_env VLAN_BRIDGE
+
+         neutron:
+           address_pool: neutron-pool01
+           dhcp: false
 
        nodes:
         - name: slave-0
@@ -97,33 +84,24 @@ template:
             # List of node interfaces
             interfaces:
              - label: iface0
-               l2_network_device: public
-               interface_model: *interface_model
-             - label: iface1
                l2_network_device: private
                interface_model: *interface_model
+             - label: iface1
+               l2_network_device: public
+               interface_model: *interface_model
              - label: iface2
-               l2_network_device: storage
-               interface_model: *interface_model
-             - label: iface3
-               l2_network_device: management
-               interface_model: *interface_model
-             - label: iface4
-               l2_network_device: local
+               l2_network_device: neutron
                interface_model: *interface_model
             network_config:
               iface0:
                 networks:
-                 - public
+                 - private
               iface1:
                 networks:
-                 - private
+                 - public
               iface2:
                 networks:
-                 - storage
-              iface3:
-                networks:
-                 - management
+                 - neutron
 
         - name: slave-1
           role: k8s-node
