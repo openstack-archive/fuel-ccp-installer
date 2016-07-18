@@ -37,6 +37,7 @@ python-pip
 git-review
 python-tox
 screen
+sshpass
 tmux
 python-dev
 gcc
