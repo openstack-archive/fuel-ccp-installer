@@ -49,14 +49,14 @@ def get_env():
 
 def get_master_ip(env):
     admin = env.get_node(name='fuel-ccp')
-    return admin.get_ip_address_by_network_name('public')
+    return admin.get_ip_address_by_network_name('private')
 
 
 def get_slave_ips(env):
     slaves = env.get_nodes(role='k8s-node')
     ips = []
     for slave in slaves:
-        ip = slave.get_ip_address_by_network_name('public').encode('utf-8')
+        ip = slave.get_ip_address_by_network_name('private').encode('utf-8')
         ips.append(ip)
     return ips
 
@@ -66,7 +66,7 @@ def get_bridged_iface_mac(env, ip):
         ips = [iface.addresses[0].ip_address for iface in node.interfaces
                if iface.addresses]
         if ip in ips:
-            iface = node.get_interface_by_network_name('local')
+            iface = node.get_interface_by_network_name('public')
             return iface.mac_address
 
 
