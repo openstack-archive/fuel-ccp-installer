@@ -45,6 +45,10 @@ else
     SLAVE_IPS=( $SLAVE_IPS )
 fi
 
+# Install missing packages
+if ! type sshpass > /dev/null; then
+    sudo apt-get update && sudo apt-get install -y sshpass
+fi
 
 # Wait for all servers(grep only IP addresses):
 for IP in ${SLAVE_IPS[@]}; do
