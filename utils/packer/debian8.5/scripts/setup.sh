@@ -59,7 +59,7 @@ echo "daemon.* /var/log/daemon.log" >> /etc/rsyslog.d/50-default.conf
 # add default user to necessary groups:
 # workaround for Docker not being installed yet:
 cat > /etc/rc.local <<EOF
-adduser vagrant docker || true
+usermod -aG docker vagrant || true
 exit 0
 EOF
 
