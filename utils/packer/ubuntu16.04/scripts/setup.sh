@@ -56,10 +56,8 @@ echo "daemon.* /var/log/daemon.log" >> /etc/rsyslog.d/50-default.conf
 
 # add default user to necessary groups:
 # workaround for Docker not being installed yet:
-cat > /etc/rc.local <<EOF
-adduser vagrant docker || true
-exit 0
-EOF
+groupadd -f docker
+usermod -aG docker vagrant || true
 
 # Set vim as a default editor
 update-alternatives --set editor /usr/bin/vim.basic
