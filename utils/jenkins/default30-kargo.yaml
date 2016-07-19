@@ -78,7 +78,7 @@ template:
              - hd
             volumes:
              - name: system
-               capacity: !os_env NODE_VOLUME_SIZE, 50
+               capacity: !os_env NODE_VOLUME_SIZE, 150
                source_image: !os_env IMAGE_PATH
                format: qcow2
 
