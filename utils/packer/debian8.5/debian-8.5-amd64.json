@@ -11,7 +11,6 @@
         {
             "name": "{{user `name`}}",
 
-            "iso_checksum_type": "none",
             "iso_url": "http://cdimage.debian.org/cdimage/release/8.5.0/amd64/iso-cd/debian-8.5.0-amd64-netinst.iso",
             "iso_checksum": "ad4e8c27c561ad8248d5ebc1d36eb172f884057bfeb2c22ead823f59fa8c3dff",
             "iso_checksum_type": "SHA256",
