@@ -31,7 +31,7 @@ test_networking() {
     declare -A container_dns_works
     declare -A container_hostnet_dns_works
     failures=0
-
+    acceptable_failures=2
     for node in "${SLAVE_IPS[@]}"; do
         # Check UDP 53 for kubedns
         if ssh $SSH_OPTIONS $ADMIN_USER@$node nc -uzv $kubedns_ip 53 >/dev/null; then
@@ -83,6 +83,11 @@ test_networking() {
         echo "  Container internal DNS lookup (via kubedns): ${container_dns_works[$node]}"
         echo "  Container internal DNS lookup (via kubedns): ${container_hostnet_dns_works[$node]}"
     done
+    if [[ $failures > $acceptable_failures ]]; then
+      return $failures
+    else
+      return 0
+    fi
 }
 
 #Run test_networking if not sourced
