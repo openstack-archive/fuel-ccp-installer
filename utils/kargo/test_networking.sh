@@ -9,7 +9,7 @@ test_networking() {
 
     if [[ "$SLAVE_IPS" == "changeme" || "$ADMIN_IP" == "changeme" ]];then
         SLAVE_IPS=($(kubectl get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}'))
-        ADMIN_IP=${SLAVE_IPS[1]}
+        ADMIN_IP=${SLAVE_IPS[0]}
         if [ -z "$SLAVE_IPS" ]; then
             echo "Unable to determine k8s nodes. Please set variables SLAVE_IPS and ADMIN_IP."
             return 1
@@ -31,7 +31,7 @@ test_networking() {
     declare -A container_dns_works
     declare -A container_hostnet_dns_works
     failures=0
-
+    acceptable_failures=0
     for node in "${SLAVE_IPS[@]}"; do
         # Check UDP 53 for kubedns
         if ssh $SSH_OPTIONS $ADMIN_USER@$node nc -uzv $kubedns_ip 53 >/dev/null; then
@@ -83,6 +83,11 @@ test_networking() {
         echo "  Container internal DNS lookup (via kubedns): ${container_dns_works[$node]}"
         echo "  Container internal DNS lookup (via kubedns): ${container_hostnet_dns_works[$node]}"
     done
+    if [[ $failures > $acceptable_failures ]]; then
+      return $failures
+    else
+      return 0
+    fi
 }
 
 #Run test_networking if not sourced
