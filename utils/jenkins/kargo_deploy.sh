@@ -176,6 +176,8 @@ fi
 
 if [ "$deploy_res" -eq "0" ]; then
     echo "Testing network connectivity..."
+    # Wait a little longer for kubedns to be ready
+    sleep 5
     . ${BASH_SOURCE%/*}/../kargo/test_networking.sh
     test_networking
     deploy_res=$?
