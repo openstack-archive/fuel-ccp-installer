@@ -12,7 +12,8 @@ template:
 
     address_pools:
     # Network pools used by the environment
-      public-pool01:
+
+      private-pool01:
         net: *pool_default
         params:
           vlan_start: 1210
@@ -23,13 +24,10 @@ template:
             dhcp: [+128, -32]
             rack-01: [+2, +127]
 
-      storage-pool01:
+      public-pool01:
         net: *pool_default
-      management-pool01:
+      neutron-pool01:
         net: *pool_default
-      private-pool01:
-        net: *pool_default
-
 
     groups:
      - name: default
@@ -43,15 +41,19 @@ template:
            use_host_cpu: !os_env DRIVER_USE_HOST_CPU, true
 
        network_pools:  # Address pools for OpenStack networks.
-         public: public-pool01
-         storage: storage-pool01
-         management: management-pool01
          private: private-pool01
+         public: public-pool01
+         neutron: neutron-pool01
 
        l2_network_devices:  # Libvirt bridges. It is *NOT* Nailgun networks
          private:
            address_pool: private-pool01
            dhcp: true
+           forward:
+             mode: nat
+
+         public:
+           dhcp: false
            forward:
              mode: nat
 
@@ -74,9 +76,13 @@ template:
                source_image: !os_env IMAGE_PATH
                format: qcow2
 
+            # List of node interfaces
             interfaces:
              - label: iface0
                l2_network_device: private
+               interface_model: *interface_model
+             - label: iface1
+               l2_network_device: public
                interface_model: *interface_model
              - label: iface2
                l2_network_device: neutron
@@ -85,6 +91,9 @@ template:
               iface0:
                 networks:
                  - private
+              iface1:
+                networks:
+                 - public
               iface2:
                 networks:
                  - neutron
