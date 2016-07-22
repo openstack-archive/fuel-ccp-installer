@@ -181,7 +181,7 @@ if [ "$deploy_res" -eq "0" ]; then
     deploy_res=$?
     if [ "$deploy_res" -eq "0" ]; then
         echo "Copying connectivity script to node..."
-        scp $SSH_OPTIONS ./utils/kargo/test_networking.sh $ADMIN_USER@$ADMIN_IP:test_networking.sh
+        scp $SSH_OPTIONS ${BASH_SOURCE%/*}/../kargo/test_networking.sh $ADMIN_USER@$ADMIN_IP:test_networking.sh
     fi
 fi
 
