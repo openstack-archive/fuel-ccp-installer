@@ -50,5 +50,4 @@ python-setuptools
 apt-get -y install $PACKAGES
 
 #Installer/CCP tools
-pip install git+https://github.com/kubespray/kargo-cli.git --upgrade
 pip install git+https://git.openstack.org/openstack/fuel-ccp.git --upgrade
