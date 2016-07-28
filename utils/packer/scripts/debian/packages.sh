@@ -46,8 +46,9 @@ software-properties-common
 ansible
 python-setuptools
 "
-#PACKAGES="${PACKAGES} docker-engine"
-apt-get -y install $PACKAGES
+
+echo "==> Installing packages"
+apt-get -y --allow-unauthenticated install $PACKAGES
 
 #Installer/CCP tools
 pip install git+https://github.com/kubespray/kargo-cli.git --upgrade

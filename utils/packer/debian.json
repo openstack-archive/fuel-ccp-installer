@@ -1,0 +1,168 @@
+{
+  "_comment": "Build with `PACKER_LOG=1 DEBIAN_MAJOR_VERSION=8 DEBIAN_MINOR_VERSION=5 ARCH=amd64 HEADLESS=true packer build debian.json`",
+
+  "variables": {
+    "name": "debian-{{ env `DEBIAN_MAJOR_VERSION` }}.{{ env `DEBIAN_MINOR_VERSION` }}.0-{{ env `ARCH` }}",
+    "iso_name": "debian-{{ env `DEBIAN_MAJOR_VERSION` }}.{{ env `DEBIAN_MINOR_VERSION` }}.0-{{ env `ARCH` }}-netinst",
+    "debian_type": "{{ env `DEBIAN_TYPE` }}",
+    "debian_version": "{{ env `DEBIAN_MAJOR_VERSION` }}.{{ env `DEBIAN_MINOR_VERSION` }}.0",
+    "debian_mirror": "http://cdimage.debian.org/cdimage/release/",
+    "debian_archive": "http://cdimage.debian.org/mirror/cdimage/archive/",
+    "ssh_username": "vagrant",
+    "ssh_password": "vagrant",
+    "ssh_wait_timeout": "30m",
+    "preseed_file_name": "debian-{{ env `DEBIAN_MAJOR_VERSION`}}/preseed.cfg",
+    "accelerator": "kvm",
+    "cpus": "1",
+    "memory": "1024",
+    "disk_size": "10240",
+    "headless": "{{ env `HEADLESS` }}",
+    "boot_wait": "10s",
+    "install_vagrant_key": "true",
+    "update": "true"
+  },
+
+  "builders":
+  [
+    {
+      "type": "qemu",
+      "vm_name": "qemu-{{ user `name` }}",
+      "iso_checksum_type": "sha256",
+      "iso_checksum_url": "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/SHA256SUMS",
+      "iso_urls": [
+        "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/{{ user `iso_name` }}.iso"
+      ],
+      "shutdown_command": "echo '{{ user `ssh_password` }}' | sudo -S shutdown -P now",
+      "disk_size": "{{ user `disk_size` }}",
+      "headless": "{{ user `headless` }}",
+      "http_directory": "http",
+      "ssh_username": "{{ user `ssh_username` }}",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_wait_timeout": "{{ user `ssh_wait_timeout` }}",
+
+      "accelerator": "{{ user `accelerator` }}",
+      "qemuargs": [
+        [ "-smp", "{{ user `cpus` }}" ],
+        [ "-m", "{{ user `memory` }}M" ]
+      ],
+
+      "boot_wait": "{{ user `boot_wait` }}",
+      "boot_command":
+      [
+        "<esc><wait>",
+        "install ",
+        "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/{{ user `preseed_file_name` }} <wait>",
+        "debian-installer=en_US ",
+        "auto=true ",
+        "locale=en_US ",
+        "kbd-chooser/method=us ",
+        "keyboard-configuration/xkb-keymap=us ",
+        "fb=false ",
+        "debconf/frontend=noninteractive ",
+        "console-setup/ask_detect=false ",
+        "console-keymaps-at/keymap=us ",
+        "domain=localhost ",
+        "hostname=localhost ",
+        "net.ifnames=0 ",
+        "<enter><wait>"
+      ]
+    },
+    {
+      "type": "virtualbox-iso",
+      "vm_name": "virtualbox-{{ user `name` }}",
+      "iso_checksum_type": "sha256",
+      "iso_checksum_url": "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/SHA256SUMS",
+      "iso_urls": [
+        "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/{{ user `iso_name` }}.iso"
+      ],
+      "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
+      "disk_size": "{{ user `disk_size` }}",
+      "headless": "{{ user `headless` }}",
+      "http_directory": "http",
+      "ssh_username": "{{ user `ssh_username` }}",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_wait_timeout": "{{ user `ssh_wait_timeout` }}",
+
+      "guest_os_type": "Ubuntu_64",
+      "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+      "virtualbox_version_file": ".vbox_version",
+
+      "vboxmanage": [
+        [ "modifyvm", "{{.Name}}", "--cpus", "{{ user `cpus` }}" ],
+        [ "modifyvm", "{{.Name}}", "--memory", "{{ user `memory` }}" ]
+      ],
+
+      "boot_wait": "{{ user `boot_wait` }}",
+      "boot_command":
+      [
+        "<esc><wait>",
+        "install ",
+        "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/{{ user `preseed_file_name` }} <wait>",
+        "debian-installer=en_US ",
+        "auto=true ",
+        "locale=en_US ",
+        "kbd-chooser/method=us ",
+        "keyboard-configuration/xkb-keymap=us ",
+        "fb=false ",
+        "debconf/frontend=noninteractive ",
+        "console-setup/ask_detect=false ",
+        "console-keymaps-at/keymap=us ",
+        "domain=localhost ",
+        "hostname=localhost ",
+        "net.ifnames=0 ",
+        "<enter><wait>"
+      ]
+    }
+  ],
+
+  "provisioners": [
+    {
+      "type": "shell",
+      "environment_vars": [
+        "INSTALL_VAGRANT_KEY={{ user `install_vagrant_key` }}",
+        "UPDATE={{ user `update` }}",
+        "DEBIAN_FRONTEND=noninteractive"
+      ],
+      "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
+      "scripts": [
+        "scripts/debian/update.sh",
+        "scripts/debian/packages.sh",
+        "scripts/debian/setup.sh",
+        "scripts/vagrant.sh",
+        "scripts/sshd.sh",
+        "scripts/vmtool.sh"
+      ]
+    },
+    {
+      "type": "shell",
+      "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
+      "scripts": [
+        "scripts/debian/cleanup.sh",
+        "scripts/minimize.sh"
+      ]
+    }
+  ],
+
+  "post-processors": [
+    {
+      "type": "shell-local",
+      "only": [ "qemu" ],
+      "inline": [
+        "qemu-img convert -c -f qcow2 -O qcow2 -o cluster_size=2M ./output-qemu/qemu-{{user `name`}} {{user `name`}}.qcow2"
+      ]
+    },
+    {
+      "type": "vagrant",
+      "only": [ "qemu" ],
+      "compression_level": 9,
+      "vagrantfile_template": "Vagrantfile-qemu.template",
+      "output": "{{ user `name` }}-{{.Provider}}.box"
+    },
+    {
+      "type": "vagrant",
+      "only": [ "virtualbox-iso" ],
+      "compression_level": 9,
+      "output": "{{ user `name` }}-{{.Provider}}.box"
+    }
+  ]
+}
