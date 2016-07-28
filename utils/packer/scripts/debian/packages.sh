@@ -46,8 +46,12 @@ software-properties-common
 ansible
 python-setuptools
 "
-#PACKAGES="${PACKAGES} docker-engine"
-apt-get -y install $PACKAGES
+
+echo "==> Installing packages"
+apt-get -y --allow-unauthenticated install $PACKAGES
+
+# Upgrading pip
+pip install --upgrade pip
 
 #Installer/CCP tools
 pip install git+https://git.openstack.org/openstack/fuel-ccp.git --upgrade
