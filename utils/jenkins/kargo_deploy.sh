@@ -98,15 +98,13 @@ for slaveip in ${SLAVE_IPS[@]}; do
     # Add VM label:
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
 
-    deploy_args+=" node${current_slave}[ansible_ssh_host=${slaveip},ip=${slaveip}]"
+    inventory_args+=" ${slaveip}"
     ((current_slave++))
 done
 
 echo "Setting up required dependencies..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get update
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git python-dev python3-dev python-pip gcc libssl-dev libffi-dev vim software-properties-common
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo easy_install setuptools"
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo pip install 'cryptography>=1.3.2' 'cffi>=1.6.0'"
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git vim software-properties-common
 
 echo "Setting up ansible..."
 case $NODE_BASE_OS in
@@ -126,18 +124,15 @@ case $NODE_BASE_OS in
 esac
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-get install -y ansible"'
 
-echo "Setting up kargo-cli..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone https://github.com/kubespray/kargo-cli.git
-# Workaround for kargo prepare bug
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && git checkout 4fabe51301ba805f57024d5a511c78f58b6d9aa9'"
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sudo sh -c 'cd kargo-cli && python setup.py install'"
-
 echo "Checking out kargo playbook..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone $KARGO_REPO
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sh -c 'cd kargo && git checkout $KARGO_COMMIT'"
 
-echo "Preparing kargo node..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kargo prepare -y --noclone --nodes $deploy_args
+echo "Setting up primary node for deployment..."
+scp $SSH_OPTIONS ${BASH_SOURCE%/*}/../kargo/inventory.py $ADMIN_USER@$ADMIN_IP:inventory.py
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod +x inventory.py
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP env CONFIG_FILE=kargo/inventory/inventory.cfg python3 inventory.py ${SLAVE_IPS[@]}
+
 cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
