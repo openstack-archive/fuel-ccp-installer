@@ -46,7 +46,8 @@ software-properties-common
 ansible
 python-setuptools
 "
-#PACKAGES="${PACKAGES} docker-engine"
+
+echo "==> Installing packages"
 apt-get -y install $PACKAGES
 
 #Installer/CCP tools
