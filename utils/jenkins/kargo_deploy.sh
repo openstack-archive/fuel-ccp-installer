@@ -180,6 +180,15 @@ if [ "$deploy_res" -eq "0" ]; then
     fi
 fi
 
+if [ "$deploy_res" -eq "0" ]; then
+    echo "Enabling dashboard UI..."
+    cat ${BASH_SOURCE%/*}/../kargo/kubernetes-dashboard.yaml | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "kubectl create -f -"
+    deploy_res=$?
+    if [ "$deploy_res" -ne "0" ]; then
+        echo "Unable to create dashboard UI!"
+    fi
+fi
+
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
     rm -f VLAN_IPS
@@ -204,7 +213,7 @@ set +x
     echo "* SLAVES IPS: `tail -n +2 VLAN_IPS | tr '\n' ' '`"
     echo "* USERNAME: $ADMIN_USER"
     echo "* PASSWORD: $ADMIN_PASSWORD"
-    echo "* K8s dashboard: http://`head -n1 VLAN_IPS`/api/v1/proxy/namespaces/kube-system/services/kubernetes-dashboard"
+    echo "* K8s dashboard: https://kube:changeme`head -n1 VLAN_IPS`/ui/"
     echo "**************************************"
     echo "**************************************"
     echo "**************************************"
