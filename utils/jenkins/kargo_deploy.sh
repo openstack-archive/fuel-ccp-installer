@@ -90,6 +90,9 @@ for slaveip in ${SLAVE_IPS[@]}; do
     # Workaround to disable ipv6 dns which can cause docker pull to fail
     echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
 
+    # Requirements for ansible
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python-netaddr"
+
     # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y resolvconf"
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /run/resolvconf/resolv.conf /etc/resolv.conf"
