@@ -1,0 +1,3 @@
+# All values can be overridden in CUSTOM_YAML
+# must be unquoted
+docker_version: 1.11
