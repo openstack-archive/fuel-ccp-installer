@@ -1,0 +1,16 @@
+# All values can be overridden in CUSTOM_YAML
+kube_network_plugin: "calico"
+#Required for calico
+kube_proxy_mode: "iptables"
+#Configure calico to set --nat-outgoing and --ipip pool option
+ipip: true
+#Set kubernetes version. Note that v3.0.1 has bugs
+kube_version: "v1.2.6"
+#Override hyperkube image to use CoreOS v1.2.6
+hyperkube_image_repo: "quay.io/coreos/hyperkube"
+hyperkube_image_tag: "v1.2.6_coreos.0"
+
+# Versions from kargo commit 4fb4ac120b9433109924b17701e822dde0d39fbf
+etcd_version: "v3.0.1"
+calico_version: "v0.20.0"
+calico_cni_version: "v1.3.1"

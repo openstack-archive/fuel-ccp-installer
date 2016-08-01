@@ -27,6 +27,14 @@ VM_LABEL=${BUILD_TAG:-unknown}
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
 KARGO_COMMIT=${KARGO_COMMIT:-master}
 
+# Default deployment settings
+COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
+COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
+COMMON_DEFAULTS_OPT="-e @~/kargo/${COMMON_DEFAULTS_YAML}"
+OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
+OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+OS_SPECIFIC_DEFAULTS_OPT="-e @~/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+
 function exit_gracefully {
     exit_code=$?
     set +e
@@ -48,7 +56,6 @@ function exit_gracefully {
 }
 
 mkdir -p tmp logs
-
 
 # Allow non-Jenkins script to predefine info
 if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
@@ -174,10 +181,14 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP env CONFIG_FILE=kargo/inventory/inventory
 cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
 
+echo "Uploading default settings..."
+cat $COMMON_DEFAULTS_SRC | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/${COMMON_DEFAULTS_YAML}"
+cat $OS_SPECIFIC_DEFAULTS_SRC | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
     echo -e "$CUSTOM_YAML" | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/custom.yaml"
-    custom_opts="-e @kargo/custom.yaml"
+    custom_opts="-e @~/kargo/custom.yaml"
 fi
 
 # Stop trapping pre-setup tasks
@@ -188,7 +199,8 @@ tries=3
 until ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
     --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
-    /home/${ADMIN_USER}/kargo/cluster.yml $custom_opts; do
+    /home/${ADMIN_USER}/kargo/cluster.yml $COMMON_DEFAULTS_OPT \
+    $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
         if [[ $tries > 0 ]]; then
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
@@ -197,6 +209,7 @@ until ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
         fi
 done
 deploy_res=0
+
 
 echo "Setting up kubedns..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
