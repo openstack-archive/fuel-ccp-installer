@@ -27,6 +27,25 @@ VM_LABEL=${BUILD_TAG:-unknown}
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
 KARGO_COMMIT=${KARGO_COMMIT:-master}
 
+function exit_gracefully {
+    exit_code=$?
+    set +e
+    # set exit code if it is a param
+    [[ -n "$1" ]] && exit_code=$1
+    if [[ "$ENV_TYPE" == "fuel-devops" && "$KEEP_ENV" != "0" ]]; then
+        if [[ "${deploy_res}" -eq "0" && "${DONT_DESTROY_ON_SUCCESS}" != "1" ]];then
+            dos.py erase ${ENV_NAME}
+        else
+            if [ "${deploy_res}" -ne "0" ];then
+                dos.py suspend ${ENV_NAME}
+                dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
+                dos.py destroy ${ENV_NAME}
+                echo "To revert snapshot please run: dos.py revert ${ENV_NAME} ${ENV_NAME}.snapshot"
+            fi
+        fi
+    fi
+    exit $exit_code
+}
 
 mkdir -p tmp logs
 
@@ -66,9 +85,11 @@ for IP in ${SLAVE_IPS[@]}; do
     done
 done
 
-set +e
 current_slave=1
 deploy_args=""
+
+# Trap errors during env preparation stage
+trap exit_gracefully ERR INT TERM
 
 echo "Preparing SSH key..."
 if ! [ -f $WORKSPACE/id_rsa ]; then
@@ -95,7 +116,9 @@ for slaveip in ${SLAVE_IPS[@]}; do
 
     # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y resolvconf"
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /run/resolvconf/resolv.conf /etc/resolv.conf"
+
+    # If resolvconf was installed, copy its conf to fix dangling symlink
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /run/resolvconf/resolv.conf /etc/resolv.conf" || :
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo rm -rf /etc/resolvconf"
 
     # Add VM label:
@@ -112,7 +135,15 @@ ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git vim software-
 echo "Setting up ansible..."
 case $NODE_BASE_OS in
     ubuntu)
-        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible; apt-get update"'
+        set +e
+        ppa_retries=3
+        for try in 1..$ppa_retries; do
+            ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible; apt-get update"' && break
+            if [[ "$try" == "$ppa_retries" ]]; then
+                exit 1
+            fi
+        done
+        set -e
     ;;
     debian)
         for slaveip in ${SLAVE_IPS[@]}; do
@@ -145,6 +176,8 @@ if [ -n "$CUSTOM_YAML" ]; then
     custom_opts="-e @kargo/custom.yaml"
 fi
 
+# Stop trapping pre-setup tasks
+set +e
 
 echo "Deploying k8s via ansible..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
@@ -214,17 +247,5 @@ set +x
 set -x
 fi
 
-if [[ "$ENV_TYPE" == "fuel-devops" ]]; then
-    if [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" != "1" ];then
-        dos.py erase ${ENV_NAME}
-    else
-        if [ "${deploy_res}" -ne "0" ];then
-            dos.py suspend ${ENV_NAME}
-            dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
-            dos.py destroy ${ENV_NAME}
-            echo "To revert snapshot please run: dos.py revert ${ENV_NAME} ${ENV_NAME}.snapshot"
-        fi
-    fi
-fi
 
-exit ${deploy_res}
+exit_gracefully ${deploy_res}
