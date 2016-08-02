@@ -33,10 +33,10 @@ function exit_gracefully {
     # set exit code if it is a param
     [[ -n "$1" ]] && exit_code=$1
     if [[ "$ENV_TYPE" == "fuel-devops" && "$KEEP_ENV" != "0" ]]; then
-        if [[ "${deploy_res}" -eq "0" && "${DONT_DESTROY_ON_SUCCESS}" != "1" ]];then
+        if [[ "${exit_code}" -eq "0" && "${DONT_DESTROY_ON_SUCCESS}" != "1" ]]; then
             dos.py erase ${ENV_NAME}
         else
-            if [ "${deploy_res}" -ne "0" ];then
+            if [ "${exit_code}" -ne "0" ];then
                 dos.py suspend ${ENV_NAME}
                 dos.py snapshot ${ENV_NAME} ${ENV_NAME}.snapshot
                 dos.py destroy ${ENV_NAME}
