@@ -118,7 +118,7 @@ for slaveip in ${SLAVE_IPS[@]}; do
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y resolvconf"
 
     # If resolvconf was installed, copy its conf to fix dangling symlink
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /run/resolvconf/resolv.conf /etc/resolv.conf" || :
+    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp --remove-destination \`realpath /etc/resolv.conf\` /etc/resolv.conf" || :
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo rm -rf /etc/resolvconf"
 
     # Add VM label:
