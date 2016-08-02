@@ -4,8 +4,10 @@
 # Nodes config
 num_instances: 3
 instance_name_prefix: "node"
+# FIXME(bogdando) switch to the public installer images, once published
 box: "bogdando/k8s-debian"
 vm_gui: "false"
+# For full OpenStack deployment you may need something like a 8G per a VM node
 vm_memory: 2048
 vm_cpus: 1
 vm_cpu_limit: 75
@@ -21,11 +23,13 @@ sync_type: "nfs"
 subnet_prefix: "172.17"
 
 # Kargo config for a K8s cluster
-kube_version: "v1.3.0"
+kube_version: "v1.2.4"
 #kargo_repo:
 #kargo_commit:
 #cloud_provider:
 kube_proxy_mode: "iptables"
 kube_network_plugin: "calico"
-etcd_deployment_type: "host"
-kube_hostpath_dynamic_provisioner: "true"
+etcd_deployment_type: "docker"
+ipip: "true"
+# Enable it to use PetSets (requires kube_version >= v1.3.0)
+kube_hostpath_dynamic_provisioner: "false"
