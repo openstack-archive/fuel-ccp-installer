@@ -125,6 +125,7 @@
       ],
       "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
       "scripts": [
+        "scripts/debian/mirrors.sh",
         "scripts/debian/update.sh",
         "scripts/debian/packages.sh",
         "scripts/debian/console.sh",
