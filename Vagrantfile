@@ -27,10 +27,10 @@ $public_subnet = cfg['public_subnet'] || "#{$subnet_prefix}.0"
 $private_subnet = cfg['private_subnet'] || "#{$subnet_prefix}.1"
 $neutron_subnet = cfg['neutron_subnet'] || "#{$subnet_prefix}.3"
 $mgmt_cidr = cfg['mgmt_cidr'] || "#{$subnet_prefix}.2.0/24"
-$box = cfg['box'] || "adidenko/ubuntu-1604-k8s"
+$box = cfg['box']
 $sync_type = cfg['sync_type'] || "rsync"
 
-$kube_version = cfg['kube_version'] || "v1.3.0"
+$kube_version = cfg['kube_version']
 $kargo_repo = ENV['KARGO_REPO'] || cfg['kargo_repo']
 $kargo_commit = ENV['KARGO_COMMIT'] || cfg['kargo_commit']
 $cloud_provider = cfg['cloud_provider']
@@ -38,6 +38,9 @@ $kube_proxy_mode =  cfg['kube_proxy_mode'] || "iptables"
 $kube_network_plugin = cfg['kube_network_plugin'] || "calico"
 $etcd_deployment_type = cfg['etcd_deployment_type'] || "host"
 $kube_hostpath_dynamic_provisioner = cfg['kube_hostpath_dynamic_provisioner'] || true
+$ipip = cfg['ipip'] || false
+$hyperkube_image_repo = cfg ['hyperkube_image_repo']
+$hyperkube_image_tag = cfg['hyperkube_image_tag']
 
 def with_env(filename, env=[])
   "#{env.join ' '} /bin/bash -x -c #{filename}"
@@ -70,7 +73,10 @@ Vagrant.configure("2") do |config|
           "kube_network_plugin"               => $kube_network_plugin,
           "kube_version"                      => $kube_version,
           "kube_hostpath_dynamic_provisioner" => $kube_hostpath_dynamic_provisioner,
-          "etcd_deployment_type"              => $etcd_deployment_type
+          "hyperkube_image_repo"              => $hyperkube_image_repo,
+          "hyperkube_image_tag"               => $hyperkube_image_tag,
+          "etcd_deployment_type"              => $etcd_deployment_type,
+          "ipip"                              => $ipip
         }
         unless $cloud_provider.nil? or $cloud_provider.empty? or $cloud_provider == "none"
           templ.merge({"cloud_provider" => $cloud_provider})
