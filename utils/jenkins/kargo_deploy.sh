@@ -193,7 +193,9 @@ if [ "$deploy_res" -eq "0" ]; then
     ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
     count=26
     for waiting in `seq 1 $count`; do
-        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running && break
+        if ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running; then
+            ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP host kubernetes && break
+        fi
         if [ $waiting -lt $count ]; then
             echo "Waiting for kubedns to be up..."
             sleep 5
