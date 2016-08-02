@@ -1,0 +1,8 @@
+kube_network_plugin: "calico"
+kube_version: "v1.2.6"
+kube_proxy_mode: "iptables"
+ipip: true
+kube_hostpath_dynamic_provisioner: true
+hyperkube_image_repo: "quay.io/coreos/hyperkube"
+hyperkube_image_tag: "v1.2.6_coreos.0"
+etcd_deployment_type: "host"
