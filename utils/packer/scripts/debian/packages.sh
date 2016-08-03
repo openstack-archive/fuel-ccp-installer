@@ -1,28 +1,4 @@
 #!/bin/bash -eux
-#FIXME(bogdando) switch to jessie-backports
-cat > /etc/apt/preferences.d/testing << EOF
-Package: ansible
-Pin: release a=testing
-Pin-Priority: 1001
-
-Package: python-setuptools
-Pin: release a=testing
-Pin-Priority: 1001
-
-Package: python-pkg-resources
-Pin: release a=testing
-Pin-Priority: 1001
-
-Package: *
-Pin: release a=testing
-Pin-Priority: 100
-EOF
-
-cat > /etc/apt/sources.list.d/testing.list << EOF
-deb http://http.us.debian.org/debian testing main
-deb-src http://http.us.debian.org/debian testing main
-EOF
-
 apt-get -y update
 apt-get -y dist-upgrade
 
@@ -49,7 +25,7 @@ python-setuptools
 "
 
 echo "==> Installing packages"
-apt-get -y --allow-unauthenticated install $PACKAGES
+apt-get -y install $PACKAGES
 
 # Upgrading pip
 pip install --upgrade pip
