@@ -3,24 +3,26 @@ apt-get -y update
 apt-get -y dist-upgrade
 
 PACKAGES="
+ansible
+bind9-host
 curl
+dnsutils
 ethtool
+gcc
+git-review
 htop
 isc-dhcp-client
+libffi-dev
+libssl-dev
 nfs-common
-vim
-git-review
+python-dev
+python-setuptools
 python-tox
 screen
+software-properties-common
 sshpass
 tmux
-python-dev
-gcc
-libssl-dev
-libffi-dev
-software-properties-common
-ansible
-python-setuptools
+vim
 "
 
 echo "==> Installing packages"
