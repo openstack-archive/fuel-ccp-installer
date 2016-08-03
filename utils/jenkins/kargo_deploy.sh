@@ -184,32 +184,35 @@ fi
 set +e
 
 echo "Deploying k8s via ansible..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
+tries=3
+until ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
     --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
-    /home/${ADMIN_USER}/kargo/cluster.yml $custom_opts
-
-deploy_res=$?
-
-if [ "$deploy_res" -eq "0" ]; then
-    echo "Setting up kubedns..."
-    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
-    ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
-    count=26
-    for waiting in `seq 1 $count`; do
-        if ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running; then
-            ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP host kubernetes && break
-        fi
-        if [ $waiting -lt $count ]; then
-            echo "Waiting for kubedns to be up..."
-            sleep 5
+    /home/${ADMIN_USER}/kargo/cluster.yml $custom_opts; do
+        if [[ $tries > 0 ]]; then
+            (( tries-- ))
+            echo "Deployment failed! Trying $tries more times..."
         else
-            echo "Kubedns did not come up in time"
-            deploy_res=1
+            exit_gracefully 1
         fi
-    done
+done
 
-fi
+echo "Setting up kubedns..."
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
+ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
+count=26
+for waiting in `seq 1 $count`; do
+    if ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running; then
+        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP host kubernetes && break
+    fi
+    if [ $waiting -lt $count ]; then
+        echo "Waiting for kubedns to be up..."
+        sleep 5
+    else
+        echo "Kubedns did not come up in time"
+        deploy_res=1
+    fi
+done
 
 if [ "$deploy_res" -eq "0" ]; then
     echo "Testing network connectivity..."
