@@ -1,15 +1,15 @@
 Package: ansible
-Pin: release a=testing
+Pin: release a=backports
 Pin-Priority: 1001
 
 Package: python-setuptools
-Pin: release a=testing
+Pin: release a=backports
 Pin-Priority: 1001
 
 Package: python-pkg-resources
-Pin: release a=testing
+Pin: release a=backports
 Pin-Priority: 1001
 
 Package: *
-Pin: release a=testing
+Pin: release a=backports
 Pin-Priority: 100
