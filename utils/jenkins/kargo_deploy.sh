@@ -196,11 +196,13 @@ until ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
             exit_gracefully 1
         fi
 done
+deploy_res=0
 
 echo "Setting up kubedns..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
 count=26
+
 for waiting in `seq 1 $count`; do
     if ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running; then
         ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP host kubernetes && break
