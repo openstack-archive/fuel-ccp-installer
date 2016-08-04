@@ -55,6 +55,19 @@ function exit_gracefully {
     exit $exit_code
 }
 
+function with_retries {
+    set +e
+    local retries=3
+    for try in 1..$retries; do
+        ${@}
+        [ $? -eq 0 ] && break
+        if [[ "$try" == "$retries" ]]; then
+            exit 1
+        fi
+    done
+    set -e
+}
+
 mkdir -p tmp logs
 
 # Allow non-Jenkins script to predefine info
@@ -122,8 +135,6 @@ for slaveip in ${SLAVE_IPS[@]}; do
     # Workaround to disable ipv6 dns which can cause docker pull to fail
     echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
 
-    # Requirements for ansible
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python-netaddr"
 
     # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y resolvconf"
@@ -139,35 +150,27 @@ for slaveip in ${SLAVE_IPS[@]}; do
     ((current_slave++))
 done
 
-echo "Setting up required dependencies..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get update
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo apt-get install -y git vim software-properties-common
-
-echo "Setting up ansible..."
+echo "Setting up required dependencies and ansible..."
 case $NODE_BASE_OS in
     ubuntu)
-        set +e
-        ppa_retries=3
-        for try in 1..$ppa_retries; do
-            ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-add-repository -y ppa:ansible/ansible; apt-get update"' && break
-            if [[ "$try" == "$ppa_retries" ]]; then
-                exit 1
-            fi
-        done
-        set -e
+        with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-add-repository -y ppa:ansible/ansible
+        with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get update
     ;;
     debian)
         for slaveip in ${SLAVE_IPS[@]}; do
-            scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_testing_repo.list $ADMIN_USER@$slaveip:/tmp/testing.list
-            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/testing.list /etc/apt/sources.list.d/testing.list"
-            scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_pinning $ADMIN_USER@$slaveip:/tmp/testing
-            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/testing /etc/apt/preferences.d/testing"
-            echo "Upgrading setuptools"
-            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip 'sudo sh -c "apt-get update; apt-get -y install --only-upgrade python-setuptools"'
+            scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_backports_repo.list $ADMIN_USER@$slaveip:/tmp/backports.list
+            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/backports.list /etc/apt/sources.list.d/backports.list"
+            scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_pinning $ADMIN_USER@$slaveip:/tmp/backports
+            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/backports /etc/apt/preferences.d/backports"
+            with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get update
+            with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get -y install --only-upgrade python-setuptools
         done
     ;;
 esac
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP 'sudo sh -c "apt-get install -y ansible"'
+for slaveip in ${SLAVE_IPS[@]}; do
+    with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python-netaddr
+done
+with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get install -y git vim software-properties-common ansible
 
 echo "Checking out kargo playbook..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone $KARGO_REPO
