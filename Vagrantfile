@@ -27,17 +27,11 @@ $public_subnet = cfg['public_subnet'] || "#{$subnet_prefix}.0"
 $private_subnet = cfg['private_subnet'] || "#{$subnet_prefix}.1"
 $neutron_subnet = cfg['neutron_subnet'] || "#{$subnet_prefix}.3"
 $mgmt_cidr = cfg['mgmt_cidr'] || "#{$subnet_prefix}.2.0/24"
-$box = cfg['box'] || "adidenko/ubuntu-1604-k8s"
+$box = cfg['box']
 $sync_type = cfg['sync_type'] || "rsync"
 
-$kube_version = cfg['kube_version'] || "v1.3.0"
 $kargo_repo = ENV['KARGO_REPO'] || cfg['kargo_repo']
 $kargo_commit = ENV['KARGO_COMMIT'] || cfg['kargo_commit']
-$cloud_provider = cfg['cloud_provider']
-$kube_proxy_mode =  cfg['kube_proxy_mode'] || "iptables"
-$kube_network_plugin = cfg['kube_network_plugin'] || "calico"
-$etcd_deployment_type = cfg['etcd_deployment_type'] || "host"
-$kube_hostpath_dynamic_provisioner = cfg['kube_hostpath_dynamic_provisioner'] || true
 
 def with_env(filename, env=[])
   "#{env.join ' '} /bin/bash -x -c #{filename}"
@@ -65,17 +59,6 @@ Vagrant.configure("2") do |config|
         # Only execute once the Ansible provisioner on a kargo node,
         # when all the machines are up and ready.
         ip = "#{$private_subnet}.#{$kargo_node_index+10}"
-        templ = {
-          "kube_proxy_mode"                   => $kube_proxy_mode,
-          "kube_network_plugin"               => $kube_network_plugin,
-          "kube_version"                      => $kube_version,
-          "kube_hostpath_dynamic_provisioner" => $kube_hostpath_dynamic_provisioner,
-          "etcd_deployment_type"              => $etcd_deployment_type
-        }
-        unless $cloud_provider.nil? or $cloud_provider.empty? or $cloud_provider == "none"
-          templ.merge({"cloud_provider" => $cloud_provider})
-        end
-        yaml = templ.to_yaml
         vars = {
           "KARGO_REPO"   => $kargo_repo,
           "KARGO_COMMIT" => $kargo_commit,
@@ -86,8 +69,7 @@ Vagrant.configure("2") do |config|
         env = []
         vars.each { |k, v| env << "#{k}=#{v}" }
 
-        deploy = with_env("/vagrant/utils/jenkins/kargo_deploy.sh",
-          [env, "CUSTOM_YAML=\"#{yaml}\""].flatten)
+        deploy = with_env("/vagrant/utils/jenkins/kargo_deploy.sh", env)
         config.vm.provision "shell", inline: "#{deploy}"
       end
     end
