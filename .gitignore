@@ -4,8 +4,10 @@
 *.so
 
 # Artifacts
-utils/packer/*/packer_cache/*
-utils/packer/*/output*
+utils/packer/packer_cache/*
+utils/packer/output*
+*.box
+*.qcow2
 
 # Packages
 *.egg*
