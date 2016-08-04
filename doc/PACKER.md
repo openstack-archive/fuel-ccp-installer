@@ -49,10 +49,8 @@ access environment.
 
 #### Customized installation
 
-Debian configuration is based on 
-[jessie preseed](https://www.debian.org/releases/jessie/example-preseed.txt).
-Ubuntu configuration is based on 
-[xenial preseed](https://help.ubuntu.com/lts/installation-guide/example-preseed.txt).
+Debian configuration is based on [jessie preseed](https://www.debian.org/releases/jessie/example-preseed.txt).
+Ubuntu configuration is based on [xenial preseed](https://help.ubuntu.com/lts/installation-guide/example-preseed.txt).
 A few modifications have been made. Use `diff` for more details.
 
 ##### Debian/Ubuntu installation
