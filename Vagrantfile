@@ -65,6 +65,7 @@ Vagrant.configure("2") do |config|
           "SLAVE_IPS"    => "\"#{node_ips.join(' ')}\"",
           "ADMIN_IP"     => ip,
           "IMAGE_PATH"   => $box.sub('/','_'),
+          "USE_VAGRANT"  => "true"
         }
         env = []
         vars.each { |k, v| env << "#{k}=#{v}" }

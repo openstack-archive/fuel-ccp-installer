@@ -27,8 +27,18 @@ VM_LABEL=${BUILD_TAG:-unknown}
 
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
 KARGO_COMMIT=${KARGO_COMMIT:-master}
+USE_VAGRANT=${USE_VAGRANT:-false}
+INSTALLER_REPO=${INSTALLER_REPO:-https://git.openstack.org/openstack/fuel-ccp-installer.git}
+INSTALLER_COMMIT=${INSTALLER_COMMIT:-master}
 
 # Default deployment settings
+if [ "${USE_VAGRANT}" != "false" ] ; then
+  INSTALLER_PATH="/vagrant"
+elif [ "${ADMIN_IP}" == "local" ] ; then
+  INSTALLER_PATH="${BASH_SOURCE%/*}../../"
+else
+  INSTALLER_PATH="/home/${ADMIN_USER}/fuel-ccp-installer"
+fi
 COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
 COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
 COMMON_DEFAULTS_OPT="-e @~/kargo/${COMMON_DEFAULTS_YAML}"
@@ -38,8 +48,24 @@ OS_SPECIFIC_DEFAULTS_OPT="-e @~/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
 
 required_ansible_version="2.1.0"
 
+function admin_node_command {
+    if [[ "$ADMIN_IP" == "local" ]];then
+       eval "$@"
+    else
+       ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
+    fi
+}
+
+function collect_info {
+    # Get diagnostic info and store it as the logs.tar.gz at the admin node
+    admin_node_command /usr/bin/ansible-playbook \
+        --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+        --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
+        /home/${ADMIN_USER}/kargo/scripts/collect-info.yaml
+}
+
 function exit_gracefully {
-    exit_code=$?
+    local exit_code=$?
     set +e
     # set exit code if it is a param
     [[ -n "$1" ]] && exit_code=$1
@@ -71,29 +97,21 @@ function with_retries {
     set -e
 }
 
-function admin_node_command {
-    if [[ "$ADMIN_IP" == "local" ]];then
-       eval "$@"
-    else
-       ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
-    fi
-}
-
 function wait_for_nodes {
     for IP in $@; do
         elapsed_time=0
         master_wait_time=30
         while true; do
             report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} -o PreferredAuthentications=password ${ADMIN_USER}@${IP} echo ok || echo not ready)
-    
+
             if [ "${report}" = "ok" ]; then
                 break
             fi
-    
+
             if [ "${elapsed_time}" -gt "${master_wait_time}" ]; then
                 exit 2
             fi
-    
+
             sleep 1
             let elapsed_time+=1
         done
@@ -167,6 +185,12 @@ echo "Checking out kargo playbook..."
 admin_node_command git clone $KARGO_REPO
 admin_node_command "sh -c 'cd kargo && git checkout $KARGO_COMMIT'"
 
+if [ "${INSTALLER_PATH}" == "/home/${ADMIN_USER}/fuel-ccp-installer" ] ; then
+  echo "Checking out installer playbooks..."
+  admin_node_command git clone $INSTALLER_REPO
+  admin_node_command "sh -c 'cd fuel-ccp-installer && git checkout $INSTALLER_COMMIT'"
+fi
+
 echo "Setting up admin node for deployment..."
 cat ${BASH_SOURCE%/*}/../kargo/inventory.py | admin_node_command "cat > inventory.py"
 admin_node_command CONFIG_FILE=kargo/inventory/inventory.cfg python3 inventory.py ${SLAVE_IPS[@]}
@@ -221,6 +245,13 @@ for slaveip in ${SLAVE_IPS[@]}; do
     ((current_slave++))
 done
 
+echo "Enabling human readable ansible logging..."
+# FIXME(bogdando) switch to kargo path, once committed there
+admin_node_command /usr/bin/ansible-playbook \
+    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --become-user=root -e ansible_ssh_user=vagrant -e human_readable_plugin=true \
+    ${INSTALLER_PATH}/playbooks/configure-logs.yaml
+
 # Stop trapping pre-setup tasks
 set +e
 
@@ -235,6 +266,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done
