@@ -18,6 +18,7 @@ IMAGE_PATH=${IMAGE_PATH:-bootstrap/output-qemu/ubuntu1404}
 # detect OS type from the image name, assume debian by default
 NODE_BASE_OS=$(basename ${IMAGE_PATH} | grep -io -e ubuntu -e debian)
 NODE_BASE_OS="${NODE_BASE_OS:-debian}"
+ADMIN_NODE_BASE_OS="${ADMIN_NODE_BASE_OS:-$NODE_BASE_OS}"
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
 SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -68,6 +69,14 @@ function with_retries {
     set -e
 }
 
+function admin_node_command {
+    if [[ "$ADMIN_IP" == "local" ]];then
+       eval "$@"
+    else
+       ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
+    fi
+}
+
 mkdir -p tmp logs
 
 # Allow non-Jenkins script to predefine info
@@ -78,17 +87,81 @@ if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
     ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python ${BASH_SOURCE%/*}/env.py create_env
 
     SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_slaves_ips | tr -d "[],'"))
+    # Set ADMIN_IP=local to use current host to run ansible
     ADMIN_IP=${SLAVE_IPS[0]}
 else
-    ENV_TYPE={ENV_TYPE:-other}
+    ENV_TYPE=${ENV_TYPE:-other}
     SLAVE_IPS=( $SLAVE_IPS )
+    ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
 fi
 
-# Install missing packages
+# Trap errors during env preparation stage
+trap exit_gracefully ERR INT TERM
+
+# Install missing packages on the host running this script
 if ! type sshpass > /dev/null; then
     sudo apt-get update && sudo apt-get install -y sshpass
 fi
 
+echo "Setting up ansible and required dependencies..."
+if ! admin_node_command type ansible > /dev/null; then
+    case $ADMIN_NODE_BASE_OS in
+# NEEDS INDENT
+        ubuntu)
+            with_retries admin_node_command -- sudo apt-add-repository -y ppa:ansible/ansible
+            with_retries admin_node_command -- sudo apt-get update
+        ;;
+        debian)
+            cat $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_backports_repo.list | admin_node_command "sudo sh -c 'cat - > /etc/apt/sources.list.d/backports.list'"
+            cat $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_pinning | admin_node_command "sudo sh -c 'cat - > /etc/apt/preferences.d/backports'"
+            with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get update
+            with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get -y install --only-upgrade python-setuptools
+            echo "Debian slave node steps skipped"
+#            for slaveip in ${SLAVE_IPS[@]}; do
+#                scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_backports_repo.list $ADMIN_USER@$slaveip:/tmp/backports.list
+#                ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/backports.list /etc/apt/sources.list.d/backports.list"
+#                scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_pinning $ADMIN_USER@$slaveip:/tmp/backports
+#                ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/backports /etc/apt/preferences.d/backports"
+#                with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get update
+#                with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get -y install --only-upgrade python-setuptools
+#            done
+        ;;
+    esac
+    admin_node_command sudo apt-get install -y ansible python-netaddr git
+fi
+
+echo "Checking out kargo playbook..."
+admin_node_command git clone $KARGO_REPO
+admin_node_command "sh -c 'cd kargo && git checkout $KARGO_COMMIT'"
+
+echo "Setting up admin node for deployment..."
+cat ${BASH_SOURCE%/*}/../kargo/inventory.py | admin_node_command "cat > inventory.py"
+admin_node_command CONFIG_FILE=kargo/inventory/inventory.cfg python3 inventory.py ${SLAVE_IPS[@]}
+
+# FIXME(mattymo): Should be part of underlay
+echo "Preparing SSH key..."
+if ! [ -f $WORKSPACE/id_rsa ]; then
+    ssh-keygen -t rsa -f $WORKSPACE/id_rsa -N "" -q
+    chmod 600 ${WORKSPACE}/id_rsa*
+    test -f ~/.ssh/config && SSH_OPTIONS="${SSH_OPTIONS} -F /dev/null"
+fi
+eval $(ssh-agent)
+ssh-add $WORKSPACE/id_rsa
+
+cat $WORKSPACE/id_rsa | admin_node_command "cat - > .ssh/id_rsa"
+admin_node_command chmod 600 .ssh/id_rsa
+
+echo "Uploading default settings..."
+cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > kargo/${COMMON_DEFAULTS_YAML}"
+cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+
+if [ -n "$CUSTOM_YAML" ]; then
+    echo "Uploading custom YAML for deployment..."
+    echo -e "$CUSTOM_YAML" | admin_node_command "cat > kargo/custom.yaml"
+    custom_opts="-e @~/kargo/custom.yaml"
+fi
+
+# TODO(mattymo): move to ansible
 # Wait for all servers(grep only IP addresses):
 for IP in ${SLAVE_IPS[@]}; do
     elapsed_time=0
@@ -112,29 +185,19 @@ done
 current_slave=1
 deploy_args=""
 
-# Trap errors during env preparation stage
-trap exit_gracefully ERR INT TERM
-
-echo "Preparing SSH key..."
-if ! [ -f $WORKSPACE/id_rsa ]; then
-    ssh-keygen -t rsa -f $WORKSPACE/id_rsa -N "" -q
-    chmod 600 ${WORKSPACE}/id_rsa*
-    test -f ~/.ssh/config && SSH_OPTIONS="${SSH_OPTIONS} -F /dev/null"
-fi
-eval $(ssh-agent)
-ssh-add $WORKSPACE/id_rsa
 
 echo "Adding ssh key authentication and labels to nodes..."
 for slaveip in ${SLAVE_IPS[@]}; do
+    # FIXME(mattymo): Underlay provisioner should set up keys
     sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
 
     # FIXME(mattymo): underlay should set hostnames
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sed -i 's/127.0.1.1.*/$slaveip\tnode${current_slave}/g' /etc/hosts"
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo hostnamectl set-hostname node${current_slave}"
 
+    # TODO(mattymo): Move to kargo
     # Workaround to disable ipv6 dns which can cause docker pull to fail
     echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
-
 
     # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y resolvconf"
@@ -150,56 +213,12 @@ for slaveip in ${SLAVE_IPS[@]}; do
     ((current_slave++))
 done
 
-echo "Setting up required dependencies and ansible..."
-case $NODE_BASE_OS in
-    ubuntu)
-        with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-add-repository -y ppa:ansible/ansible
-        with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get update
-    ;;
-    debian)
-        for slaveip in ${SLAVE_IPS[@]}; do
-            scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_backports_repo.list $ADMIN_USER@$slaveip:/tmp/backports.list
-            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/backports.list /etc/apt/sources.list.d/backports.list"
-            scp $SSH_OPTIONS ${BASH_SOURCE%/*}/files/debian_pinning $ADMIN_USER@$slaveip:/tmp/backports
-            ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp -f /tmp/backports /etc/apt/preferences.d/backports"
-            with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get update
-            with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo apt-get -y install --only-upgrade python-setuptools
-        done
-    ;;
-esac
-for slaveip in ${SLAVE_IPS[@]}; do
-    with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python-netaddr
-done
-with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get install -y git vim software-properties-common ansible
-
-echo "Checking out kargo playbook..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone $KARGO_REPO
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "sh -c 'cd kargo && git checkout $KARGO_COMMIT'"
-
-echo "Setting up primary node for deployment..."
-scp $SSH_OPTIONS ${BASH_SOURCE%/*}/../kargo/inventory.py $ADMIN_USER@$ADMIN_IP:inventory.py
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod +x inventory.py
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP env CONFIG_FILE=kargo/inventory/inventory.cfg python3 inventory.py ${SLAVE_IPS[@]}
-
-cat $WORKSPACE/id_rsa | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "cat - > .ssh/id_rsa"
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP chmod 600 .ssh/id_rsa
-
-echo "Uploading default settings..."
-cat $COMMON_DEFAULTS_SRC | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/${COMMON_DEFAULTS_YAML}"
-cat $OS_SPECIFIC_DEFAULTS_SRC | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
-
-if [ -n "$CUSTOM_YAML" ]; then
-    echo "Uploading custom YAML for deployment..."
-    echo -e "$CUSTOM_YAML" | ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "cat > kargo/custom.yaml"
-    custom_opts="-e @~/kargo/custom.yaml"
-fi
-
 # Stop trapping pre-setup tasks
 set +e
 
 echo "Deploying k8s via ansible..."
 tries=3
-until ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
+until admin_node_command /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
     --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
     /home/${ADMIN_USER}/kargo/cluster.yml $COMMON_DEFAULTS_OPT \
@@ -213,15 +232,18 @@ until ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP /usr/bin/ansible-playbook \
 done
 deploy_res=0
 
+echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 
+# NOTE: This needs to run on a node with kube-config.yml and kubelet (kube-master role)
+PRI_NODE=${SLAVE_IPS[0]}
 echo "Setting up kubedns..."
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo pip install kpm
-ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
-count=26
+ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE sudo pip install kpm
+ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
 
-for waiting in `seq 1 $count`; do
-    if ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get po --namespace=kube-system | grep kubedns | grep -q Running; then
-        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP host kubernetes && break
+tries=26
+for waiting in `seq 1 $tries`; do
+    if ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE kubectl get po --namespace=kube-system | grep kubedns | grep -q Running; then
+        ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE host kubernetes && break
     fi
     if [ $waiting -lt $count ]; then
         echo "Waiting for kubedns to be up..."
@@ -239,7 +261,7 @@ if [ "$deploy_res" -eq "0" ]; then
     deploy_res=$?
     if [ "$deploy_res" -eq "0" ]; then
         echo "Copying connectivity script to node..."
-        scp $SSH_OPTIONS ${BASH_SOURCE%/*}/../kargo/test_networking.sh $ADMIN_USER@$ADMIN_IP:test_networking.sh
+        scp $SSH_OPTIONS ${BASH_SOURCE%/*}/../kargo/test_networking.sh $ADMIN_USER@$PRI_NODE:test_networking.sh
     fi
 fi
 
