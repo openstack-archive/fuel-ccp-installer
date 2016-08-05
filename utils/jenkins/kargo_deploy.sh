@@ -1,6 +1,6 @@
 #!/bin/bash
 set -xe
-
+# Set ADMIN_IP=local to use current host to run ansible
 # for now we assume that master ip is 10.0.0.2 and slaves ips are 10.0.0.{3,4,5,...}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-vagrant}
 ADMIN_USER=${ADMIN_USER:-vagrant}
@@ -27,8 +27,18 @@ VM_LABEL=${BUILD_TAG:-unknown}
 
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
 KARGO_COMMIT=${KARGO_COMMIT:-master}
+USE_VAGRANT=${USE_VAGRANT:-false}
+INSTALLER_REPO=${INSTALLER_REPO:-https://git.openstack.org/openstack/fuel-ccp-installer.git}
+INSTALLER_COMMIT=${INSTALLER_COMMIT:-master}
 
 # Default deployment settings
+if [ "${USE_VAGRANT}" == "false" -a "${ADMIN_IP}" == "local" ] ; then
+  INSTALLER_PATH="${BASH_SOURCE%/*}../../"
+elif [ "${USE_VAGRANT}" == "false" -a "${ADMIN_IP}" != "local" ] ; then
+  INSTALLER_PATH="/home/${ADMIN_USER}/fuel-ccp-installer"
+else # Vagrant only
+  INSTALLER_PATH="/vagrant"
+fi
 COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
 COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
 COMMON_DEFAULTS_OPT="-e @~/kargo/${COMMON_DEFAULTS_YAML}"
@@ -38,8 +48,24 @@ OS_SPECIFIC_DEFAULTS_OPT="-e @~/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
 
 required_ansible_version="2.1.0"
 
+function admin_node_command {
+    if [[ "$ADMIN_IP" == "local" ]];then
+       eval "$@"
+    else
+       ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
+    fi
+}
+
 function exit_gracefully {
-    exit_code=$?
+    local exit_code=$?
+
+    # Get diagnostic info and store it as the logs.tar.gz at the admin node
+    # FIXME(bogdando) switch to kargo path, once committed there
+    admin_node_command /usr/bin/ansible-playbook \
+        --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+        --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
+        /home/${ADMIN_USER}/kargo/scripts/collect-info.yaml
+
     set +e
     # set exit code if it is a param
     [[ -n "$1" ]] && exit_code=$1
@@ -71,29 +97,21 @@ function with_retries {
     set -e
 }
 
-function admin_node_command {
-    if [[ "$ADMIN_IP" == "local" ]];then
-       eval "$@"
-    else
-       ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
-    fi
-}
-
 function wait_for_nodes {
     for IP in $@; do
         elapsed_time=0
         master_wait_time=30
         while true; do
             report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} -o PreferredAuthentications=password ${ADMIN_USER}@${IP} echo ok || echo not ready)
-    
+
             if [ "${report}" = "ok" ]; then
                 break
             fi
-    
+
             if [ "${elapsed_time}" -gt "${master_wait_time}" ]; then
                 exit 2
             fi
-    
+
             sleep 1
             let elapsed_time+=1
         done
@@ -103,14 +121,13 @@ function wait_for_nodes {
 mkdir -p tmp logs
 
 # Allow non-Jenkins script to predefine info
-if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
+if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" && "${USE_VAGRANT}" == "false" ]]; then
     ENV_TYPE="fuel-devops"
     dos.py erase ${ENV_NAME} || true
     rm -rf logs/*
     ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python ${BASH_SOURCE%/*}/env.py create_env
 
     SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_slaves_ips | tr -d "[],'"))
-    # Set ADMIN_IP=local to use current host to run ansible
     ADMIN_IP=${SLAVE_IPS[0]}
     wait_for_nodes $ADMIN_IP
 else
@@ -167,10 +184,15 @@ echo "Checking out kargo playbook..."
 admin_node_command git clone $KARGO_REPO
 admin_node_command "sh -c 'cd kargo && git checkout $KARGO_COMMIT'"
 
+if [ "${USE_VAGRANT}" == "false" -a "${ADMIN_IP}" != "local" ] ; then
+  echo "Checking out installer playbooks..."
+  admin_node_command git clone $INSTALLER_REPO
+  admin_node_command "sh -c 'cd fuel-ccp-installer && git checkout $INSTALLER_COMMIT'"
+fi
+
 echo "Setting up admin node for deployment..."
 cat ${BASH_SOURCE%/*}/../kargo/inventory.py | admin_node_command "cat > inventory.py"
 admin_node_command CONFIG_FILE=kargo/inventory/inventory.cfg python3 inventory.py ${SLAVE_IPS[@]}
-
 
 cat $WORKSPACE/id_rsa | admin_node_command "cat - > .ssh/id_rsa"
 admin_node_command chmod 600 .ssh/id_rsa
@@ -221,6 +243,13 @@ for slaveip in ${SLAVE_IPS[@]}; do
     ((current_slave++))
 done
 
+echo "Enabling human readable ansible logging..."
+# FIXME(bogdando) switch to kargo path, once committed there
+admin_node_command /usr/bin/ansible-playbook \
+    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --become-user=root -e ansible_ssh_user=vagrant -e human_readable_plugin=true \
+    ${INSTALLER_PATH}/playbooks/configure-logs.yaml
+
 # Stop trapping pre-setup tasks
 set +e
 
@@ -235,6 +264,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done
@@ -313,5 +343,5 @@ set +x
 set -x
 fi
 
-
+collect_info
 exit_gracefully ${deploy_res}
