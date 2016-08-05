@@ -27,17 +27,37 @@ VM_LABEL=${BUILD_TAG:-unknown}
 
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
 KARGO_COMMIT=${KARGO_COMMIT:-master}
+USE_VAGRANT=${USE_VAGRANT:-false}
+INSTALLER_REPO=${INSTALLER_REPO:-https://git.openstack.org/openstack/fuel-ccp-installer.git}
+INSTALLER_COMMIT=${INSTALLER_COMMIT:-master}
 
 # Default deployment settings
+if [ "${USE_VAGRANT}" != "false" ] ; then
+  INSTALLER_PATH="/vagrant"
+elif [ "${ADMIN_IP}" == "local" ] ; then
+  INSTALLER_PATH="${BASH_SOURCE%/*}../../"
+else
+  INSTALLER_PATH="/home/${ADMIN_USER}/fuel-ccp-installer"
+fi
 COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
 COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
+COMMON_DEFAULTS_OPT="-e @~/kargo/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
 OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+OS_SPECIFIC_DEFAULTS_OPT="-e @~/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+LOG_LEVEL=${LOG_LEVEL:--v}
 
 required_ansible_version="2.1.0"
 
+
+function collect_info {
+    # Get diagnostic info and store it as the logs.tar.gz at the admin node
+    admin_node_command ADMIN_USER=$ADMIN_USER \
+        $ADMIN_WORKSPACE=$ADMIN_WORKSPACE collect_logs.sh
+}
+
 function exit_gracefully {
-    exit_code=$?
+    local exit_code=$?
     set +e
     # set exit code if it is a param
     [[ -n "$1" ]] && exit_code=$1
@@ -53,8 +73,6 @@ function exit_gracefully {
             fi
         fi
     fi
-    # Kill current ssh-agent
-    eval $(ssh-agent -k)
     exit $exit_code
 }
 
@@ -73,9 +91,9 @@ function with_retries {
 
 function admin_node_command {
     if [[ "$ADMIN_IP" == "local" ]];then
-        eval "$@"
+       eval "$@"
     else
-        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
+       ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
     fi
 }
 
@@ -223,6 +241,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done
@@ -239,6 +258,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done
@@ -255,6 +275,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done

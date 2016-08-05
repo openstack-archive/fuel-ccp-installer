@@ -1,0 +1,4 @@
+log_path: /var/log/ansible/
+conf_file: /etc/ansible/ansible.cfg
+human_readable_plugin: true
+callback_plugin_path: /usr/share/ansible/plugins/callback
