@@ -33,11 +33,19 @@ COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
 COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
 OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+LOG_LEVEL=${LOG_LEVEL:--v}
 
 required_ansible_version="2.1.0"
 
+function collect_info {
+    # Get diagnostic info and store it as the logs.tar.gz at the admin node
+    admin_node_command ADMIN_USER=$ADMIN_USER \
+        $ADMIN_WORKSPACE=$ADMIN_WORKSPACE \
+        $VARS="${LOGGING_DEFAULTS_OPT}" collect_logs.sh
+}
+
 function exit_gracefully {
-    exit_code=$?
+    local exit_code=$?
     set +e
     # set exit code if it is a param
     [[ -n "$1" ]] && exit_code=$1
@@ -225,6 +233,7 @@ cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inven
 COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
 KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml"
+LOGGING_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/utils/kargo/roles/configure_logs/defaults/main.yml"
 
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
@@ -263,6 +272,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done
@@ -279,6 +289,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done
@@ -295,6 +306,7 @@ until admin_node_command /usr/bin/ansible-playbook \
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
+            collect_info
             exit_gracefully 1
         fi
 done
