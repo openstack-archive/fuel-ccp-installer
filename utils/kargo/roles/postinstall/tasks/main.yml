@@ -1,0 +1,43 @@
+---
+- name: Install kpm via pip
+  command: pip install kpm
+  run_once: true
+
+- name: Deploy kubedns pod
+  command: "{{ bin_dir }}/kpm deploy kube-system/kubedns --namespace=kube-system"
+
+- name: Wait for kubedns to be ready
+  command: host kubernetes
+  delay: 30
+  retries: 25
+
+- name: Copy network test script
+  copy:
+    src: test_networking.sh
+    dest: "{{ bin_dir }}/test_networking.sh"
+    owner: root
+    group: root
+    mode: 0755
+
+#FIXME(mattmyo): Refactor test_networking.sh to run without ssh keys
+- name: Copy ssh key to primary master
+  become: no
+  local_action: shell sh -c "rsync -p -e \"ssh -i $HOME/.ssh/id_rsa -o StrictHostKeyChecking=no\" $HOME/.ssh/id_rsa {{ansible_user}}@{{ ip }}:.ssh/id_rsa"
+
+- name: Test networking connectivity
+  shell: "bash {{ bin_dir }}/test_networking.sh"
+  changed_when: false
+  become: no
+
+- name: Copy dashboard definition
+  copy:
+    src: kubernetes-dashboard.yml
+    dest: /etc/kubernetes/kubernetes-dashboard.yml
+    owner: root
+    group: root
+    mode: 0644
+  register: dashboard
+
+- name: Create Kubernetes dashboard
+  command: "{{ bin_dir }}/kubectl create -f /etc/kubernetes/kubernetes-dashboard.yml"
+  when: dashboard.changed
