@@ -31,10 +31,8 @@ KARGO_COMMIT=${KARGO_COMMIT:-master}
 # Default deployment settings
 COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
 COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
-COMMON_DEFAULTS_OPT="-e @~/kargo/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
 OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
-OS_SPECIFIC_DEFAULTS_OPT="-e @~/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
 
 required_ansible_version="2.1.0"
 
@@ -73,9 +71,9 @@ function with_retries {
 
 function admin_node_command {
     if [[ "$ADMIN_IP" == "local" ]];then
-       eval "$@"
+        eval "$@"
     else
-       ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
+        ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
     fi
 }
 
@@ -85,15 +83,15 @@ function wait_for_nodes {
         master_wait_time=30
         while true; do
             report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} -o PreferredAuthentications=password ${ADMIN_USER}@${IP} echo ok || echo not ready)
-    
+
             if [ "${report}" = "ok" ]; then
                 break
             fi
-    
+
             if [ "${elapsed_time}" -gt "${master_wait_time}" ]; then
                 exit 2
             fi
-    
+
             sleep 1
             let elapsed_time+=1
         done
@@ -138,14 +136,28 @@ if ! type sshpass > /dev/null; then
 fi
 
 
+# Copy utils/kargo dir to WORKSPACE/utils/kargo so it works across both local
+# and remote admin node deployment modes.
+echo "Preparing admin node..."
 if [[ "$ADMIN_IP" != "local" ]]; then
+    ADMIN_WORKSPACE="workspace"
     sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${ADMIN_IP} -p 22
+else
+    ADMIN_WORKSPACE="$WORKSPACE"
 fi
+admin_node_command mkdir -p $ADMIN_WORKSPACE/utils/kargo
+tar cz ${BASH_SOURCE%/*}/../kargo | admin_node_command tar xzf - -C $ADMIN_WORKSPACE/utils/
 
 echo "Setting up ansible and required dependencies..."
-installed_ansible_version=$(admin_node_command dpkg-query -W -f='${Version}\n' ansible || echo "0.0")
+installed_ansible_version=$(admin_node_command dpkg-query -W -f='\${Version}\\n' ansible || echo "0.0")
 if ! admin_node_command type ansible > /dev/null || \
         dpkg --compare-versions "$installed_ansible_version" "lt" "$required_ansible_version"; then
+    # Wait for apt lock in case it is updating from cron job
+    admin_node_command "sh -c \"while pgrep apt-get >/dev/null || pgrep apt.systemd.daily >/dev/null; do echo 'Waiting for apt lock...'; sleep 30; done\""
+    echo "START DEBUG APT INFO"
+    admin_node_command ps waux | grep apt
+    admin_node_command ls -l /var/lib/dpkg
+    echo "END DEBUG APT INFO"
     case $ADMIN_NODE_BASE_OS in
         ubuntu)
             with_retries admin_node_command -- sudo apt-get update
@@ -164,74 +176,68 @@ if ! admin_node_command type ansible > /dev/null || \
 fi
 
 echo "Checking out kargo playbook..."
-admin_node_command git clone $KARGO_REPO
-admin_node_command "sh -c 'cd kargo && git checkout $KARGO_COMMIT'"
-
-echo "Setting up admin node for deployment..."
-cat ${BASH_SOURCE%/*}/../kargo/inventory.py | admin_node_command "cat > inventory.py"
-admin_node_command CONFIG_FILE=kargo/inventory/inventory.cfg python3 inventory.py ${SLAVE_IPS[@]}
+admin_node_command "sh -c 'cd $ADMIN_WORKSPACE && git clone $KARGO_REPO'" || true
+admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/kargo && git fetch --all && git checkout $KARGO_COMMIT'"
 
 
 cat $WORKSPACE/id_rsa | admin_node_command "cat - > .ssh/id_rsa"
 admin_node_command chmod 600 .ssh/id_rsa
 
 echo "Uploading default settings..."
-cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > kargo/${COMMON_DEFAULTS_YAML}"
-cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/kargo/${COMMON_DEFAULTS_YAML}"
+cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/${COMMON_DEFAULTS_YAML}"
+OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
 
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
-    echo -e "$CUSTOM_YAML" | admin_node_command "cat > kargo/custom.yaml"
-    custom_opts="-e @~/kargo/custom.yaml"
+    echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/kargo/custom.yaml"
+    custom_opts="-e @$ADMIN_WORKSPACE/kargo/custom.yaml"
 fi
 
-# TODO(mattymo): move to ansible
+echo "Generating ansible inventory on admin node..."
+admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/kargo/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
+
 echo "Waiting for all nodes to be reachable by SSH..."
 wait_for_nodes ${SLAVE_IPS[@]}
-
-current_slave=1
-deploy_args=""
-
 
 echo "Adding ssh key authentication and labels to nodes..."
 for slaveip in ${SLAVE_IPS[@]}; do
     # FIXME(mattymo): Underlay provisioner should set up keys
     sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
 
-    # FIXME(mattymo): underlay should set hostnames
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sed -i 's/127.0.1.1.*/$slaveip\tnode${current_slave}/g' /etc/hosts"
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo hostnamectl set-hostname node${current_slave}"
-
-    # TODO(mattymo): Move to kargo
-    # Workaround to disable ipv6 dns which can cause docker pull to fail
-    echo "precedence ::ffff:0:0/96  100" | ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo sh -c 'cat - >> /etc/gai.conf'"
-
-    # Workaround to fix DNS search domain: https://github.com/kubespray/kargo/issues/322
-    # Retry in case of apt lock
-    with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y resolvconf"
-
-    # If resolvconf was installed, copy its conf to fix dangling symlink
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo cp --remove-destination \`realpath /etc/resolv.conf\` /etc/resolv.conf" || :
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "sudo rm -rf /etc/resolvconf"
-
+    # FIXME(mattymo): Underlay provisioner should set label file
     # Add VM label:
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
-
-    inventory_args+=" ${slaveip}"
-    ((current_slave++))
 done
 
 # Stop trapping pre-setup tasks
 set +e
 
+echo "Running pre-setup steps on nodes via ansible..."
+tries=3
+until admin_node_command /usr/bin/ansible-playbook \
+    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --become-user=root -i $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg \
+    $ADMIN_WORKSPACE/utils/kargo/preinstall.yml $COMMON_DEFAULTS_OPT \
+    $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
+        if [[ $tries > 1 ]]; then
+            (( tries-- ))
+            echo "Deployment failed! Trying $tries more times..."
+        else
+            exit_gracefully 1
+        fi
+done
+
+
 echo "Deploying k8s via ansible..."
 tries=3
 until admin_node_command /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i /home/${ADMIN_USER}/kargo/inventory/inventory.cfg \
-    /home/${ADMIN_USER}/kargo/cluster.yml $COMMON_DEFAULTS_OPT \
+    --become-user=root -i $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg \
+    $ADMIN_WORKSPACE/kargo/cluster.yml $COMMON_DEFAULTS_OPT \
     $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
-        if [[ $tries > 0 ]]; then
+        if [[ $tries > 1 ]]; then
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
         else
@@ -241,47 +247,21 @@ done
 deploy_res=0
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
-
-# NOTE: This needs to run on a node with kube-config.yml and kubelet (kube-master role)
-PRI_NODE=${SLAVE_IPS[0]}
-echo "Setting up kubedns..."
-ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE sudo pip install kpm
-ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE sudo /usr/local/bin/kpm deploy kube-system/kubedns --namespace=kube-system
-
-tries=26
-for waiting in `seq 1 $tries`; do
-    if ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE kubectl get po --namespace=kube-system | grep kubedns | grep -q Running; then
-        ssh $SSH_OPTIONS $ADMIN_USER@$PRI_NODE host kubernetes && break
-    fi
-    if [ $waiting -lt $tries ]; then
-        echo "Waiting for kubedns to be up..."
-        sleep 5
-    else
-        echo "Kubedns did not come up in time"
-        deploy_res=1
-    fi
+tries=3
+until admin_node_command /usr/bin/ansible-playbook \
+    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --become-user=root -i $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg \
+    $ADMIN_WORKSPACE/utils/kargo/postinstall.yml $COMMON_DEFAULTS_OPT \
+    $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
+        if [[ $tries > 1 ]]; then
+            (( tries-- ))
+            echo "Deployment failed! Trying $tries more times..."
+        else
+            exit_gracefully 1
+        fi
 done
 
-if [ "$deploy_res" -eq "0" ]; then
-    echo "Testing network connectivity..."
-    . ${BASH_SOURCE%/*}/../kargo/test_networking.sh
-    test_networking
-    deploy_res=$?
-    if [ "$deploy_res" -eq "0" ]; then
-        echo "Copying connectivity script to node..."
-        scp $SSH_OPTIONS ${BASH_SOURCE%/*}/../kargo/test_networking.sh $ADMIN_USER@$PRI_NODE:test_networking.sh
-    fi
-fi
-
-if [ "$deploy_res" -eq "0" ]; then
-    echo "Enabling dashboard UI..."
-    cat ${BASH_SOURCE%/*}/../kargo/kubernetes-dashboard.yaml | ssh $SSH_OPTIONS $ADMIN_USER@${SLAVE_IPS[0]} "kubectl create -f -"
-    deploy_res=$?
-    if [ "$deploy_res" -ne "0" ]; then
-        echo "Unable to create dashboard UI!"
-    fi
-fi
-
+# FIXME(mattymo): Move this to underlay
 # setup VLAN if everything is ok and env will not be deleted
 if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
     rm -f VLAN_IPS
@@ -311,6 +291,7 @@ set +x
     echo "**************************************"
     echo "**************************************"
 set -x
+    rm -f VLAN_IPS
 fi
 
 
