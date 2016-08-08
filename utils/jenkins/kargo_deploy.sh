@@ -278,7 +278,7 @@ set +x
     echo "* SLAVES IPS: `tail -n +2 VLAN_IPS | tr '\n' ' '`"
     echo "* USERNAME: $ADMIN_USER"
     echo "* PASSWORD: $ADMIN_PASSWORD"
-    echo "* K8s dashboard: https://kube:changeme`head -n1 VLAN_IPS`/ui/"
+    echo "* K8s dashboard: https://kube:changeme@`head -n1 VLAN_IPS`/ui/"
     echo "**************************************"
     echo "**************************************"
     echo "**************************************"
