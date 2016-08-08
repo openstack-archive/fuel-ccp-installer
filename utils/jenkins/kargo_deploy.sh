@@ -58,7 +58,7 @@ function exit_gracefully {
 function with_retries {
     set +e
     local retries=3
-    for try in 1..$retries; do
+    for try in $(seq 1 $retries); do
         ${@}
         [ $? -eq 0 ] && break
         if [[ "$try" == "$retries" ]]; then
@@ -153,6 +153,8 @@ done
 echo "Setting up required dependencies and ansible..."
 case $NODE_BASE_OS in
     ubuntu)
+        with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get update
+        with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get install -y software-properties-common
         with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-add-repository -y ppa:ansible/ansible
         with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get update
     ;;
@@ -170,7 +172,7 @@ esac
 for slaveip in ${SLAVE_IPS[@]}; do
     with_retries ssh $SSH_OPTIONS $ADMIN_USER@$slaveip -- sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python-netaddr
 done
-with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get install -y git vim software-properties-common ansible
+with_retries ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP -- sudo apt-get install -y git vim ansible
 
 echo "Checking out kargo playbook..."
 ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP git clone $KARGO_REPO
