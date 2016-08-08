@@ -1,0 +1,37 @@
+---
+- name: Install kpm via pip
+  command: pip install kpm
+  run_once: true
+
+- name: Deploy kubedns pod
+  command: "{{ bin_dir }}/kpm deploy kube-system/kubedns --namespace=kube-system"
+
+- name: Wait for kubedns to be ready
+  command: host kubernetes
+  delay: 30
+  retries: 25
+
+- name: Copy network test script
+  file:
+    src: test_networking.sh
+    dst: "{{ bin_dir }}/test_networking.sh"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Test networking connectivity
+  command: "{{ bin_dir }}/test_networking.sh"
+  changed_when: false
+
+- name: Copy dashboard definition
+  file:
+    src: dashboard.yml
+    dst: /etc/kubernetes/kubernetes-dashboard.yml
+    owner: root
+    group: root
+    mode: 0644
+  register: dashboard
+
+- name: Create Kubernetes dashboard
+  command: "{{ bin_dir }}/kubectl create -f /etc/kubernetes/kubernetes-dashboard.yml"
+  when: dashboard.changed

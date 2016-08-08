@@ -1,0 +1,32 @@
+---
+- name: Ensure required ansible version
+  assert:
+    that: ansible_version.major == 2
+    that: ansible_version.minor >= 1
+
+- name: Wait for nodes to be ready
+  command: echo "Ready"
+  retries: 30
+  delay: 1
+
+- name: Set correct /etc/hosts entry
+  register: updated_etc_hosts
+  lineinfile:
+    dest: /etc/hosts
+    regexp: "127.0.1.1.*"
+    line: "{{ ip }}\t{{ inventory_hostname }}"
+    state: present
+
+- name: Update hostname via hostnamectl
+  command: hostnamectl set-hostname {{ inventory_hostname }}
+  when: updated_etc_hosts.changed
+
+# FIXME(mattymo): Fix in kargo
+- name: Purge resolvconf
+  apt:
+    name: resolvconf
+    force: yes
+
+- name: Fix /etc/resolv.conf symlink
+  shell: "cp --remove-destination `realpath /etc/resolv.conf` /etc/resolv.conf"
+  run_once: true  
