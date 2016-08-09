@@ -9,7 +9,6 @@ htop
 isc-dhcp-client
 nfs-common
 vim
-python-pip
 git-review
 python-tox
 screen
@@ -27,5 +26,8 @@ python-setuptools
 echo "==> Installing packages"
 apt-get -y install $PACKAGES
 
-# Upgrading pip
+# Install pip
+curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+python /tmp/get-pip.py
+rm /tmp/get-pip.py
 pip install --upgrade pip
