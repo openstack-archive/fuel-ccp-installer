@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
 import unittest
 
 from collections import OrderedDict
@@ -25,7 +26,9 @@ import inventory
 
 
 class TestInventory(unittest.TestCase):
-    def setUp(self):
+    @mock.patch('inventory.sys')
+    def setUp(self, sys_mock):
+        sys_mock.exit = mock.Mock()
         super(TestInventory, self).setUp()
         self.data = ['10.90.3.2', '10.90.3.3', '10.90.3.4']
         self.inv = inventory.KargoInventory()
