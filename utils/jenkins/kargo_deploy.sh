@@ -101,7 +101,7 @@ function wait_for_nodes {
 mkdir -p tmp logs
 
 # Allow non-Jenkins script to predefine info
-if [[ -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
+if [[ -n "$REAPPLY" || -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
     ENV_TYPE="fuel-devops"
     dos.py erase ${ENV_NAME} || true
     rm -rf logs/*
@@ -189,8 +189,18 @@ if [ -n "$CUSTOM_YAML" ]; then
     custom_opts="-e @$ADMIN_WORKSPACE/kargo/custom.yaml"
 fi
 
-echo "Generating ansible inventory on admin node..."
-admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/kargo/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
+# Try to get IPs from inventory if it isn't provided
+if [[ -z "$SLAVE_IPS" ]]; then
+    if admin_node_command stat $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg; then
+        SLAVE_IPS=($(admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/kargo/inventory/inventory.cfg $ADMIN_WORKSPACE/utils/kargo/inventory.py print_ips))
+    else
+        echo "No slave nodes available. Unable to proceed!"
+        exit_gracefully 1
+    fi
+else
+    echo "Generating ansible inventory on admin node..."
+    admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/kargo/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
+fi
 
 echo "Waiting for all nodes to be reachable by SSH..."
 wait_for_nodes ${SLAVE_IPS[@]}
@@ -288,5 +298,6 @@ set -x
     rm -f VLAN_IPS
 fi
 
-
+# TODO(mattymo): Shift to FORCE_NEW instead of REAPPLY
+echo "To reapply deployment, run env REAPPLY=yes $0"
 exit_gracefully ${deploy_res}

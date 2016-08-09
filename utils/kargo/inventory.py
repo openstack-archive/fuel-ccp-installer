@@ -19,6 +19,7 @@ import sys
 
 ROLES = ['kube-master', 'all', 'k8s-cluster:children', 'kube-node', 'etcd']
 PROTECTED_NAMES = ROLES
+AVAILABLE_COMMANDS = ['help', 'print_cfg', 'print_ips']
 _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
                    '0': False, 'no': False, 'false': False, 'off': False}
 
@@ -39,6 +40,10 @@ class KargoInventory(object):
                                                 delimiters=('\t', ' '))
         if config_file:
             self.config.read(config_file)
+
+        if changed_hosts and changed_hosts[0] in AVAILABLE_COMMANDS:
+            self.parse_command(changed_hosts[0], changed_hosts[1:])
+            sys.exit(0)
 
         self.ensure_required_groups(ROLES)
 
@@ -174,7 +179,41 @@ class KargoInventory(object):
         for host in hosts:
             self.add_host_to_group('etcd', host)
 
+    def parse_command(self, command, args=None):
+        if command == 'help':
+            self.show_help()
+        elif command == 'print_cfg':
+            self.print_config()
+        elif command == 'print_ips':
+            self.print_ips()
+        else:
+            raise Exception("Invalid command specified.")
 
+    def show_help(self):
+        help_text = '''Usage: inventory.py ip1 [ip2 ...]
+Examples: inventory.py 10.10.1.3 10.10.1.4 10.10.1.5
+
+Available commands:
+help - Display this message
+print_cfg - Write inventory file to stdout
+print_ips - Write a space-delimited list of IPs from "all" group
+
+Advanced usage:
+Add another host after initial creation: inventory.py 10.10.1.5
+Delete a host: inventory.py -10.10.1.3
+Delete a host by id: inventory.py -node1'''
+        print(help_text)
+
+    def print_config(self):
+        self.config.write(sys.stdout)
+
+    def print_ips(self):
+        ips = []
+        for host, opts in self.config.items('all'):
+           ips.append(self.get_ip_from_opts(opts))
+        print(' '.join(ips))
+
+AVAILABLE_COMMANDS = ['help', 'print_cfg', 'print_ips']
 def main(argv=None):
     if not argv:
         argv = sys.argv[1:]
