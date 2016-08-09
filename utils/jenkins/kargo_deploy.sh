@@ -217,6 +217,18 @@ for slaveip in ${SLAVE_IPS[@]}; do
     # Add VM label:
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
 
+    # Install Debian (Ubuntu) packges which are needed for deployment or health check scripts
+    if [[ "${slaveip}" == "${ADMIN_IP}" && "${ADMIN_NODE_BASE_OS}" =~ ^(ubuntu|debian)$ ]] || \
+       [[ "${slaveip}" != "${ADMIN_IP}" && "${NODE_BASE_OS}" =~ ^(ubuntu|debian)$ ]]; then
+        if [ -f "${BASH_SOURCE%/*}/../packer/scripts/debian/packages.sh" ]; then
+            echo "Installing required Debian (Ubuntu) packages..."
+            scp $SSH_OPTIONS "${BASH_SOURCE%/*}/../packer/scripts/debian/packages.sh" "${ADMIN_USER}@${slaveip}:/tmp/packages.sh"
+            ssh $SSH_OPTIONS "${ADMIN_USER}@${slaveip}" "sudo bash /tmp/packages.sh &> /tmp/pkgs_install.log && rm -f /tmp/packages.sh"
+        else
+            echo 'WARNING! Script for installing Debian packages not found!'
+        fi
+    fi
+
     inventory_args+=" ${slaveip}"
     ((current_slave++))
 done
