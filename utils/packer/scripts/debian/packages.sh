@@ -29,6 +29,3 @@ apt-get -y install $PACKAGES
 
 # Upgrading pip
 pip install --upgrade pip
-
-#Installer/CCP tools
-pip install git+https://git.openstack.org/openstack/fuel-ccp.git --upgrade
