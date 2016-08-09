@@ -60,3 +60,6 @@ ChangeLog
 *~
 .*.swp
 .*sw?
+
+# Dev env deploy leftovers
+VLAN_IPS
