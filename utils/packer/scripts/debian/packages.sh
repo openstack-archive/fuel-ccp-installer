@@ -26,7 +26,7 @@ vim
 "
 
 echo "==> Installing packages"
-apt-get -y install $PACKAGES
+apt-get -y install "${PACKAGES}"
 
 # Install pip
 curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
