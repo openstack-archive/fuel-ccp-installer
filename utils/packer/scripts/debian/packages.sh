@@ -15,11 +15,11 @@ screen
 sshpass
 tmux
 python-dev
+python-netaddr
 gcc
 libssl-dev
 libffi-dev
 software-properties-common
-ansible
 python-setuptools
 "
 
@@ -31,3 +31,9 @@ curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
 python /tmp/get-pip.py
 rm /tmp/get-pip.py
 pip install --upgrade pip
+
+# Install ansible
+# Retry because launchpad errors sometimes
+until apt-add-repository -y ppa:ansible/ansible; do sleep 1; done
+apt-get -y install ansible
+
