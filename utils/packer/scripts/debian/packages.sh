@@ -15,11 +15,8 @@ screen
 sshpass
 tmux
 python-dev
-gcc
-libssl-dev
-libffi-dev
+python-netaddr
 software-properties-common
-ansible
 python-setuptools
 "
 
