@@ -18,8 +18,13 @@ test_networking() {
 
     ADMIN_USER="vagrant"
     SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownhostsFile=/dev/null"
-    kubedns_ip=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
-    dnsmasq_ip=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system dnsmasq --template={{.spec.clusterIP}})
+    if type kubectl; then
+        kubedns_ip=$(kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
+        dnsmasq_ip=$(kubectl get svc --namespace kube-system dnsmasq --template={{.spec.clusterIP}})
+    else
+        kubedns_ip=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
+        dnsmasq_ip=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system dnsmasq --template={{.spec.clusterIP}})
+    fi
     domain="cluster.local"
 
     internal_test_domain="kubernetes.default.svc.${domain}"
