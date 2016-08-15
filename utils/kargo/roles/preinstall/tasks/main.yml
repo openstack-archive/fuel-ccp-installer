@@ -22,13 +22,17 @@
 
 # FIXME(mattymo): Fix in kargo
 - name: Purge resolvconf
-  register: purged_resolveconf
   apt:
     name: resolvconf
     force: yes
     state: absent
 
+- name: Gather info about /etc/resolv.conf
+  stat:
+    path: /etc/resolv.conf
+  register: etcresolvconf
+
 - name: Fix /etc/resolv.conf symlink
   shell: "cp --remove-destination `realpath /etc/resolv.conf` /etc/resolv.conf"
-  when: purged_resolveconf.changed and purged_resolvconf.stdout.find('Removing resolvconf')
+  when: etcresolvconf.stat.islnk
 
