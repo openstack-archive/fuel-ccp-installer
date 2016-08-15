@@ -26,6 +26,12 @@
   become: no
   local_action: shell sh -c "rsync -p -e \"ssh -i $HOME/.ssh/id_rsa -o StrictHostKeyChecking=no\" $HOME/.ssh/id_rsa {{ansible_user}}@{{ ip }}:.ssh/id_rsa"
 
+- name: Ensure dnsutils is installed
+  apt:
+    name: dnsutls
+    state: latest
+  when: ansible_os_family == "Debian"
+
 - name: Test networking connectivity
   shell: "bash {{ bin_dir }}/test_networking.sh"
   changed_when: false
