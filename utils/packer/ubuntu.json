@@ -135,10 +135,10 @@
       ],
       "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
       "scripts": [
-        "scripts/debian/update.sh",
-        "scripts/debian/packages.sh",
-        "scripts/debian/console.sh",
-        "scripts/debian/setup.sh",
+        "scripts/ubuntu/update.sh",
+        "scripts/ubuntu/packages.sh",
+        "scripts/ubuntu/console.sh",
+        "scripts/ubuntu/setup.sh",
         "scripts/vagrant.sh",
         "scripts/sshd.sh",
         "scripts/vmtool.sh"
@@ -148,7 +148,7 @@
       "type": "shell",
       "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
       "scripts": [
-        "scripts/debian/cleanup.sh",
+        "scripts/ubuntu/cleanup.sh",
         "scripts/minimize.sh"
       ]
     }
