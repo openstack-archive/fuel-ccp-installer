@@ -160,7 +160,8 @@ if ! admin_node_command type ansible > /dev/null || \
         ubuntu)
             with_retries admin_node_command -- sudo apt-get update
             with_retries admin_node_command -- sudo apt-get install -y software-properties-common
-            with_retries admin_node_command -- sudo apt-add-repository -y ppa:ansible/ansible
+            with_retries admin_node_command -- sudo sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv-keys 7BB9C367
+            with_retries admin_node_command -- sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu xenial main'
             with_retries admin_node_command -- sudo apt-get update
         ;;
         debian)
