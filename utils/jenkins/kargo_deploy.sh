@@ -129,6 +129,8 @@ if ! [ -f $WORKSPACE/id_rsa ]; then
     chmod 600 ${WORKSPACE}/id_rsa*
     test -f ~/.ssh/config && SSH_OPTIONS="${SSH_OPTIONS} -F /dev/null"
 fi
+
+# TODO(mattymo): Enable ssh-agent forwarding from calling job if it exists
 eval $(ssh-agent)
 ssh-add $WORKSPACE/id_rsa
 
@@ -160,7 +162,8 @@ if ! admin_node_command type ansible > /dev/null || \
         ubuntu)
             with_retries admin_node_command -- sudo apt-get update
             with_retries admin_node_command -- sudo apt-get install -y software-properties-common
-            with_retries admin_node_command -- sudo apt-add-repository -y ppa:ansible/ansible
+            with_retries admin_node_command -- sudo sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv-keys 7BB9C367
+            with_retries admin_node_command -- "sh -c \"sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu xenial main'\""
             with_retries admin_node_command -- sudo apt-get update
         ;;
         debian)
@@ -174,18 +177,47 @@ if ! admin_node_command type ansible > /dev/null || \
 fi
 
 echo "Checking out kargo playbook..."
-admin_node_command "sh -c 'cd $ADMIN_WORKSPACE && git clone $KARGO_REPO'" || true
+admin_node_command "sh -c 'git clone $KARGO_REPO $ADMIN_WORKSPACE/kargo'" || true
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/kargo && git fetch --all && git checkout $KARGO_COMMIT'"
 
 
 cat $WORKSPACE/id_rsa | admin_node_command "cat - > .ssh/id_rsa"
 admin_node_command chmod 600 .ssh/id_rsa
 
+
+# Try to get IPs from inventory if it isn't provided
+# Use git repo if available, then residual files from previous deploy, then
+# finally generate new inventory.
+
+if [[ -n "$INVENTORY_REPO" ]]; then
+    admin_node_command "sh -c 'git clone $INVENTORY_REPO $ADMIN_WORKSPACE/inventory'" || true
+    if [[ -n "$INVENTORY_COMMIT" ]]; then
+        admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git fetch --all && git checkout $INVENTORY_COMMIT'"
+    fi
+else
+    if [[ -z "$SLAVE_IPS" ]]; then
+        if admin_node_command stat $ADMIN_WORKSPACE/inventory/inventory.cfg; then
+            SLAVE_IPS=($(admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py print_ips))
+        else
+            echo "No slave nodes available. Unable to proceed!"
+            exit_gracefully 1
+        fi
+    else
+        echo "Generating ansible inventory on admin node..."
+        admin_node_command mkdir -p $ADMIN_WORKSPACE/inventory
+        admin_node_command git init $ADMIN_WORKSPACE/inventory
+        admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
+    fi
+fi
+
+# TODO(mattymo): Compare timestamps to decide which default to use:
+# git-based inventory or from fuel-ccp-installer
 echo "Uploading default settings..."
-cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/kargo/${COMMON_DEFAULTS_YAML}"
-cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
-COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/${COMMON_DEFAULTS_YAML}"
-OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
+cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
+COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
+OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
+KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml"
 
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
@@ -193,18 +225,9 @@ if [ -n "$CUSTOM_YAML" ]; then
     custom_opts="-e @$ADMIN_WORKSPACE/kargo/custom.yaml"
 fi
 
-# Try to get IPs from inventory if it isn't provided
-if [[ -z "$SLAVE_IPS" ]]; then
-    if admin_node_command stat $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg; then
-        SLAVE_IPS=($(admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/kargo/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py print_ips))
-    else
-        echo "No slave nodes available. Unable to proceed!"
-        exit_gracefully 1
-    fi
-else
-    echo "Generating ansible inventory on admin node..."
-    admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/kargo/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
-fi
+echo "Committing inventory changes..."
+admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git add --all'"
+admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git commit -a -m \"Automated commit\"'"
 
 echo "Waiting for all nodes to be reachable by SSH..."
 wait_for_nodes ${SLAVE_IPS[@]}
@@ -226,9 +249,9 @@ echo "Running pre-setup steps on nodes via ansible..."
 tries=3
 until admin_node_command /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg \
-    $ADMIN_WORKSPACE/utils/kargo/preinstall.yml $COMMON_DEFAULTS_OPT \
-    $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
+    --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
+    $ADMIN_WORKSPACE/utils/kargo/preinstall.yml $KARGO_DEFAULTS_OPT \
+    $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
         if [[ $tries > 1 ]]; then
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
@@ -242,9 +265,9 @@ echo "Deploying k8s via ansible..."
 tries=3
 until admin_node_command /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg \
-    $ADMIN_WORKSPACE/kargo/cluster.yml $COMMON_DEFAULTS_OPT \
-    $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
+    --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
+    $ADMIN_WORKSPACE/kargo/cluster.yml $KARGO_DEFAULTS_OPT \
+    $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
         if [[ $tries > 1 ]]; then
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
@@ -258,9 +281,9 @@ echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 tries=3
 until admin_node_command /usr/bin/ansible-playbook \
     --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i $ADMIN_WORKSPACE/kargo/inventory/inventory.cfg \
-    $ADMIN_WORKSPACE/utils/kargo/postinstall.yml $COMMON_DEFAULTS_OPT \
-    $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
+    --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
+    $ADMIN_WORKSPACE/utils/kargo/postinstall.yml $KARGO_DEFAULTS_OPT \
+    $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
         if [[ $tries > 1 ]]; then
             (( tries-- ))
             echo "Deployment failed! Trying $tries more times..."
