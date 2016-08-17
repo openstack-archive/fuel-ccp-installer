@@ -271,7 +271,7 @@ done
 
 # FIXME(mattymo): Move this to underlay
 # setup VLAN if everything is ok and env will not be deleted
-if [ "$VLAN_BRIDGE" ] && [ "${deploy_res}" -eq "0" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
+if [ "$VLAN_BRIDGE" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
     rm -f VLAN_IPS
     for IP in ${SLAVE_IPS[@]}; do
         bridged_iface_mac="`ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_bridged_iface_mac $IP`"
@@ -289,9 +289,10 @@ set +x
     echo "**************************************"
     echo "**************************************"
     echo "**************************************"
+    echo "Deployment is complete!"
     echo "* VLANs IP addresses"
     echo "* MASTER IP: `head -n1 VLAN_IPS`"
-    echo "* SLAVES IPS: `tail -n +2 VLAN_IPS | tr '\n' ' '`"
+    echo "* NODE IPS: `tail -n +2 VLAN_IPS | tr '\n' ' '`"
     echo "* USERNAME: $ADMIN_USER"
     echo "* PASSWORD: $ADMIN_PASSWORD"
     echo "* K8s dashboard: https://kube:changeme@`head -n1 VLAN_IPS`/ui/"
@@ -300,6 +301,20 @@ set +x
     echo "**************************************"
 set -x
     rm -f VLAN_IPS
+else
+    echo "**************************************"
+    echo "**************************************"
+    echo "**************************************"
+    echo "Deployment is complete!"
+    echo "* Node network addresses:"
+    echo "* MASTER IP: $ADMIN_IP"
+    echo "* NODE IPS: $SLAVE_IPS"
+    echo "* USERNAME: $ADMIN_USER"
+    echo "* PASSWORD: $ADMIN_PASSWORD"
+    echo "* K8s dashboard: https://kube:changeme@${SLAVE_IPS[0]}/ui/"
+    echo "**************************************"
+    echo "**************************************"
+    echo "**************************************"
 fi
 
 # TODO(mattymo): Shift to FORCE_NEW instead of REAPPLY
