@@ -21,11 +21,6 @@
     group: root
     mode: 0755
 
-#FIXME(mattmyo): Refactor test_networking.sh to run without ssh keys
-- name: Copy ssh key to primary master
-  become: no
-  local_action: shell sh -c "rsync -p -e \"ssh -i $HOME/.ssh/id_rsa -o StrictHostKeyChecking=no\" $HOME/.ssh/id_rsa {{ansible_user}}@{{ ip }}:.ssh/id_rsa"
-
 - name: Ensure dnsutils is installed
   apt:
     name: dnsutils
