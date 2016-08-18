@@ -63,7 +63,7 @@ Vagrant.configure("2") do |config|
           "KARGO_REPO"   => $kargo_repo,
           "KARGO_COMMIT" => $kargo_commit,
           "SLAVE_IPS"    => "\"#{node_ips.join(' ')}\"",
-          "ADMIN_IP"     => ip,
+          "ADMIN_IP"     => "local",
           "IMAGE_PATH"   => $box.sub('/','_'),
         }
         env = []
