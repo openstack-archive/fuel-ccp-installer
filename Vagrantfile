@@ -63,14 +63,14 @@ Vagrant.configure("2") do |config|
           "KARGO_REPO"   => $kargo_repo,
           "KARGO_COMMIT" => $kargo_commit,
           "SLAVE_IPS"    => "\"#{node_ips.join(' ')}\"",
-          "ADMIN_IP"     => ip,
+          "ADMIN_IP"     => "local",
           "IMAGE_PATH"   => $box.sub('/','_'),
         }
         env = []
         vars.each { |k, v| env << "#{k}=#{v}" }
 
         deploy = with_env("/vagrant/utils/jenkins/kargo_deploy.sh", env)
-        config.vm.provision "shell", inline: "#{deploy}"
+        config.vm.provision "shell", inline: "#{deploy}", privileged: false
       end
     end
   end
