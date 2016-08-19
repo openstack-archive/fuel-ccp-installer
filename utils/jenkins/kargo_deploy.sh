@@ -21,8 +21,8 @@ NODE_BASE_OS="${NODE_BASE_OS:-debian}"
 ADMIN_NODE_BASE_OS="${ADMIN_NODE_BASE_OS:-$NODE_BASE_OS}"
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
-SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-SSH_OPTIONS_COPYID=$SSH_OPTIONS
+SSH_OPTIONS="-A -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+SSH_OPTIONS_COPYID="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 VM_LABEL=${BUILD_TAG:-unknown}
 
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
@@ -54,7 +54,9 @@ function exit_gracefully {
         fi
     fi
     # Kill current ssh-agent
-    eval $(ssh-agent -k)
+    if [ -z "$INHERIT_SSH_AGENT" ]; then
+        eval $(ssh-agent -k)
+    fi
     exit $exit_code
 }
 
@@ -123,14 +125,20 @@ fi
 trap exit_gracefully ERR INT TERM
 
 # FIXME(mattymo): Should be part of underlay
-echo "Preparing SSH key..."
-if ! [ -f $WORKSPACE/id_rsa ]; then
-    ssh-keygen -t rsa -f $WORKSPACE/id_rsa -N "" -q
-    chmod 600 ${WORKSPACE}/id_rsa*
-    test -f ~/.ssh/config && SSH_OPTIONS="${SSH_OPTIONS} -F /dev/null"
+echo "Checking local SSH environment..."
+if ssh-add -l &>/dev/null; then
+    echo "Local SSH agent detected with at least one identity."
+    INHERIT_SSH_AGENT="yes"
+else
+    echo "No SSH agent available. Preparing SSH key..."
+    if ! [ -f $WORKSPACE/id_rsa ]; then
+        ssh-keygen -t rsa -f $WORKSPACE/id_rsa -N "" -q
+        chmod 600 ${WORKSPACE}/id_rsa*
+        test -f ~/.ssh/config && SSH_OPTIONS="${SSH_OPTIONS} -F /dev/null"
+    fi
+    eval $(ssh-agent)
+    ssh-add $WORKSPACE/id_rsa
 fi
-eval $(ssh-agent)
-ssh-add $WORKSPACE/id_rsa
 
 # Install missing packages on the host running this script
 if ! type sshpass > /dev/null; then
@@ -178,9 +186,10 @@ echo "Checking out kargo playbook..."
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE && git clone $KARGO_REPO'" || true
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/kargo && git fetch --all && git checkout $KARGO_COMMIT'"
 
-
-cat $WORKSPACE/id_rsa | admin_node_command "cat - > .ssh/id_rsa"
-admin_node_command chmod 600 .ssh/id_rsa
+if [ -z "$INHERIT_SSH_AGENT" ]; then
+   cat $WORKSPACE/id_rsa | admin_node_command "cat - > .ssh/id_rsa"
+   admin_node_command chmod 600 .ssh/id_rsa
+fi
 
 echo "Uploading default settings..."
 cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/kargo/${COMMON_DEFAULTS_YAML}"
