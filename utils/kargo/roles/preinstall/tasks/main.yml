@@ -19,20 +19,3 @@
 - name: Update hostname via hostnamectl
   command: hostnamectl set-hostname {{ inventory_hostname }}
   when: updated_etc_hosts.changed
-
-# FIXME(mattymo): Fix in kargo
-- name: Purge resolvconf
-  apt:
-    name: resolvconf
-    force: yes
-    state: absent
-
-- name: Gather info about /etc/resolv.conf
-  stat:
-    path: /etc/resolv.conf
-  register: etcresolvconf
-
-- name: Fix /etc/resolv.conf symlink
-  shell: "cp --remove-destination `realpath /etc/resolv.conf` /etc/resolv.conf"
-  when: etcresolvconf.stat.islnk
-
