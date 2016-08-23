@@ -109,6 +109,23 @@ function wait_for_nodes {
     done
 }
 
+function with_ansible {
+    local tries=3
+    until admin_node_command /usr/bin/ansible-playbook \
+        --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+        --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
+        $@ $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
+        $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
+            if [[ $tries > 1 ]]; then
+                (( tries-- ))
+                echo "Deployment failed! Trying $tries more times..."
+            else
+                collect_info
+                exit_gracefully 1
+            fi
+    done
+}
+
 mkdir -p tmp logs
 
 # If SLAVE_IPS are specified or REAPPLY is set, then treat env as pre-provisioned
@@ -268,54 +285,21 @@ done
 set +e
 
 echo "Running pre-setup steps on nodes via ansible..."
-tries=3
-until admin_node_command /usr/bin/ansible-playbook \
-    --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-    $ADMIN_WORKSPACE/utils/kargo/preinstall.yml $KARGO_DEFAULTS_OPT \
-    $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
-        if [[ $tries > 1 ]]; then
-            (( tries-- ))
-            echo "Deployment failed! Trying $tries more times..."
-        else
-            collect_info
-            exit_gracefully 1
-        fi
-done
+with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml
 
+echo "Running kargo preinstall early via ansible..."
+with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall
+
+echo "Configuring DNS settings on nodes via ansible..."
+# FIXME(bogdando) a hack to w/a https://github.com/kubespray/kargo/issues/452
+with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e inventory_hostname=skip_k8s_part
 
 echo "Deploying k8s via ansible..."
-tries=3
-until admin_node_command /usr/bin/ansible-playbook \
-    --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-    $ADMIN_WORKSPACE/kargo/cluster.yml $KARGO_DEFAULTS_OPT \
-    $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
-        if [[ $tries > 1 ]]; then
-            (( tries-- ))
-            echo "Deployment failed! Trying $tries more times..."
-        else
-            collect_info
-            exit_gracefully 1
-        fi
-done
+with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
 deploy_res=0
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
-tries=3
-until admin_node_command /usr/bin/ansible-playbook \
-    --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-    --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-    $ADMIN_WORKSPACE/utils/kargo/postinstall.yml $KARGO_DEFAULTS_OPT \
-    $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
-        if [[ $tries > 1 ]]; then
-            (( tries-- ))
-            echo "Deployment failed! Trying $tries more times..."
-        else
-            collect_info
-            exit_gracefully 1
-        fi
-done
+with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
 
 # FIXME(mattymo): Move this to underlay
 # setup VLAN if everything is ok and env will not be deleted
