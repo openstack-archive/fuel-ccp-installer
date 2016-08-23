@@ -20,5 +20,6 @@ calico_cni_version: "v1.3.1"
 # Custom (additional) DNS settings
 searchdomains:
   - ccp.svc.cluster.local
-nameservers:
+upstream_dns_servers:
   - 8.8.8.8
+  - 8.8.4.4
