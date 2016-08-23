@@ -243,7 +243,15 @@ fi
 
 echo "Committing inventory changes..."
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git add --all'"
-admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git commit -a -m \"Automated commit\"'"
+if ! admin_node_command git config --get user.name; then
+    admin_node_command git config --global user.name "Anonymous User"
+    admin_node_command git config --global user.email "anon@example.org"
+fi
+# Commit only if there are changes
+if ! git diff --exit-code; then
+    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git commit -a -m \"Automated commit\"'"
+fi
+
 
 echo "Waiting for all nodes to be reachable by SSH..."
 wait_for_nodes ${SLAVE_IPS[@]}
