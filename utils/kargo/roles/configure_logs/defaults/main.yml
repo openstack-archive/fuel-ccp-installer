@@ -16,9 +16,10 @@ callback_plugins:
 callback_plugin_path: /usr/share/ansible/plugins/callback
 # Define custom diag info to collect
 debug: false
+searchpath: "{{workspace|default('/home/vagrant/')}}"
 commands:
   - name: git_info
-    cmd: cat {workspace/kargo,kargo}/.git/logs/HEAD
+    cmd: find . -type d -name .git -execdir sh -c 'gen-gitinfos.sh global|head -12' \;
   - name: timedate_info
     cmd: timedatectl status
   - name: boots_info
@@ -39,6 +40,8 @@ commands:
     cmd: ps auxf | grep -v ]$
   - name: systemctl_info
     cmd: systemctl status
+  - name: systemctl_failed_info
+    cmd: systemctl --state=failed --no-pager
   - name: k8s_resolve_info
     cmd: host kubernetes
   - name: k8s_info
@@ -53,13 +56,9 @@ logs:
   - /var/log/daemon.log
   - /var/log/kern.log
   - /etc/resolv.conf
-  - kargo/cluster.yml
-  - kargo/kargo_default_ubuntu.yaml
-  - kargo/kargo_default_debian.yaml
-  - kargo/kargo_default_common.yaml
-  - kargo/inventory/inventory.cfg
-  - workspace/kargo/cluster.yml
-  - workspace/kargo/kargo_default_ubuntu.yaml
-  - workspace/kargo/kargo_default_debian.yaml
-  - workspace/kargo/kargo_default_common.yaml
-  - workspace/kargo/inventory/inventory.cfg
+  - "{{searchpath}}/kargo/cluster.yml"
+  - "{{searchpath}}/kargo/inventory/group_vars/all.yml"
+  - "{{searchpath}}/inventory/inventory.cfg"
+  - "{{searchpath}}/inventory/kargo_default_ubuntu.yaml"
+  - "{{searchpath}}/inventory/kargo_default_debian.yaml"
+  - "{{searchpath}}/inventory/kargo_default_common.yaml"
