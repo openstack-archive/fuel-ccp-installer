@@ -21,7 +21,8 @@
     "headless": "{{ env `HEADLESS` }}",
     "boot_wait": "10s",
     "install_vagrant_key": "true",
-    "update": "true"
+    "update": "true",
+    "cleanup": "true"
   },
 
   "builders":
@@ -139,6 +140,9 @@
     },
     {
       "type": "shell",
+      "environment_vars": [
+        "CLEANUP={{ user `cleanup` }}"
+      ],
       "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
       "scripts": [
         "scripts/debian/cleanup.sh",
