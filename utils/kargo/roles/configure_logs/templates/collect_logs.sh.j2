@@ -9,4 +9,4 @@ VARS=${VARS:--e ansible_ssh_user=vagrant -e human_readable_plugin=false}
 /usr/bin/ansible-playbook ${LOG_LEVEL} \
         --ssh-extra-args "$SSH_EXTRA_ARGS" -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-        ${VARS} $ADMIN_WORKSPACE/kargo/scripts/collect-info.yaml
+        -e worskpace=$ADMIN_WORKSPACE ${VARS} $ADMIN_WORKSPACE/kargo/scripts/collect-info.yaml
