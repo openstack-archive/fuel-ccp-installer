@@ -136,7 +136,7 @@
       "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
       "scripts": [
         "scripts/debian/update.sh",
-        "scripts/debian/packages.sh",
+        "scripts/debian/ubuntu-16.04/packages.sh",
         "scripts/debian/console.sh",
         "scripts/debian/setup.sh",
         "scripts/vagrant.sh",
