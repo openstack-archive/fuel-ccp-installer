@@ -1,11 +1,7 @@
 #!/bin/bash -euxo
 
-echo "==> Installed packages before cleanup"
-dpkg --get-selections | grep -v deinstall
-
 # Clean up the apt cache
 apt-get -y autoremove --purge
-#apt-get -y clean
 apt-get -y autoclean
 
 echo "==> Cleaning up udev rules"
@@ -16,12 +12,14 @@ if [ -d "/var/lib/dhcp" ]; then
   rm /var/lib/dhcp/*
 fi
 
-echo "==> Removing man pages"
-rm -rf /usr/share/man/*
-echo "==> Removing anything in /usr/src"
-rm -rf /usr/src/*
-echo "==> Removing any docs"
-rm -rf /usr/share/doc/*
+if [ "${CLEANUP}" = "true" ] ; then
+  echo "==> Removing man pages"
+  rm -rf /usr/share/man/*
+  echo "==> Removing anything in /usr/src"
+  rm -rf /usr/src/*
+  echo "==> Removing any docs"
+  rm -rf /usr/share/doc/*
+fi
 echo "==> Removing caches"
 find /var/cache -type f -exec rm -rf {} \;
 echo "==> Cleaning up log files"

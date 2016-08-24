@@ -17,6 +17,9 @@ Ubuntu build for libvrit
       HEADLESS=true \
       packer build -var 'cpus=2' -var 'memory=2048' -only=qemu ubuntu.json
 
+Note, in order to preserve manpages, sources and docs to the image, define
+the ``-var 'cleanup=false'``.
+
 Debian build for virtualbox
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
