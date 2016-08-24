@@ -272,7 +272,7 @@ set +e
 echo "Running pre-setup steps on nodes via ansible..."
 tries=3
 until admin_node_command /usr/bin/ansible-playbook \
-    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
     --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
     $ADMIN_WORKSPACE/utils/kargo/preinstall.yml $KARGO_DEFAULTS_OPT \
     $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
@@ -289,7 +289,7 @@ done
 echo "Deploying k8s via ansible..."
 tries=3
 until admin_node_command /usr/bin/ansible-playbook \
-    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
     --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
     $ADMIN_WORKSPACE/kargo/cluster.yml $KARGO_DEFAULTS_OPT \
     $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
@@ -306,7 +306,7 @@ deploy_res=0
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 tries=3
 until admin_node_command /usr/bin/ansible-playbook \
-    --ssh-extra-args "-o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+    --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
     --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
     $ADMIN_WORKSPACE/utils/kargo/postinstall.yml $KARGO_DEFAULTS_OPT \
     $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
