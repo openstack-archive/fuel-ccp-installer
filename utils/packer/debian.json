@@ -22,7 +22,8 @@
     "boot_wait": "10s",
     "install_vagrant_key": "true",
     "update": "true",
-    "cleanup": "true"
+    "cleanup": "true",
+    "pull_images": "true"
   },
 
   "builders":
@@ -141,7 +142,8 @@
     {
       "type": "shell",
       "environment_vars": [
-        "CLEANUP={{ user `cleanup` }}"
+        "CLEANUP={{ user `cleanup` }}",
+        "PULL_IMAGES={{ user `pull_images` }}"
       ],
       "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
       "scripts": [
