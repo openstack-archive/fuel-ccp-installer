@@ -191,7 +191,7 @@ if ! admin_node_command type ansible > /dev/null || \
 fi
 
 echo "Checking out kargo playbook..."
-admin_node_command "sh -c 'git clone $KARGO_REPO $ADMIN_WORKSPACE/kargo'" || true
+admin_node_command git clone "$KARGO_REPO" "$ADMIN_WORKSPACE/kargo" || true
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/kargo && git fetch --all && git checkout $KARGO_COMMIT'"
 
 if [ -z "$INHERIT_SSH_AGENT" ]; then
@@ -242,14 +242,14 @@ if [ -n "$CUSTOM_YAML" ]; then
 fi
 
 echo "Committing inventory changes..."
-admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git add --all'"
+admin_node_command git -C $ADMIN_WORKSPACE/inventory add --all
 if ! admin_node_command git config --get user.name; then
     admin_node_command git config --global user.name "Anonymous User"
     admin_node_command git config --global user.email "anon@example.org"
 fi
 # Commit only if there are changes
-if ! git diff --exit-code; then
-    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git commit -a -m \"Automated commit\"'"
+if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --exit-code; then
+    admin_node_command git -C $ADMIN_WORKSPACE/inventory git commit -a -m "Automated commit"
 fi
 
 
