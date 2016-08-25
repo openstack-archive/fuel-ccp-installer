@@ -237,8 +237,8 @@ LOGGING_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/utils/kargo/roles/configure_logs/defa
 
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
-    echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/kargo/custom.yaml"
-    custom_opts="-e @$ADMIN_WORKSPACE/kargo/custom.yaml"
+    echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/custom.yaml"
+    custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
 fi
 
 echo "Committing inventory changes..."
