@@ -7,11 +7,11 @@
   command: "{{ bin_dir }}/kpm deploy kube-system/kubedns --namespace=kube-system"
 
 - name: Wait for kubedns to be ready
-  uri: url=https://kube:{{kube_api_pwd}}@kubernetes validate_certs=no
-  register: kubedns_ready
-  until: kubedns_ready.status == 200 or kubedns_ready.status == 401
-  delay: 30
-  retries: 15
+  shell: "nslookup kubernetes.default.svc.{{ cluster_name }} {{ dns_server }}"
+  register: kubernetes_resolvable
+  until: kubernetes_resolvable.rc == 0
+  delay: 5
+  retries: 20
 
 - name: Copy network test script
   copy:
