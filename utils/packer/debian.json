@@ -22,7 +22,8 @@
     "boot_wait": "10s",
     "install_vagrant_key": "true",
     "update": "true",
-    "cleanup": "true"
+    "cleanup": "true",
+    "pull_images": "true"
   },
 
   "builders":
@@ -124,6 +125,7 @@
       "environment_vars": [
         "INSTALL_VAGRANT_KEY={{ user `install_vagrant_key` }}",
         "UPDATE={{ user `update` }}",
+        "PULL_IMAGES={{ user `pull_images` }}",
         "DEBIAN_FRONTEND=noninteractive"
       ],
       "execute_command": "echo '{{ user `ssh_password` }}' | {{.Vars}} sudo -S -E bash -x '{{.Path}}'",
@@ -131,6 +133,7 @@
         "scripts/debian/mirrors.sh",
         "scripts/debian/update.sh",
         "scripts/debian/packages.sh",
+        "scripts/docker_images.sh",
         "scripts/debian/console.sh",
         "scripts/debian/setup.sh",
         "scripts/vagrant.sh",
