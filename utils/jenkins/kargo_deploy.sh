@@ -40,8 +40,7 @@ required_ansible_version="2.1.0"
 function collect_info {
     # Get diagnostic info and store it as the logs.tar.gz at the admin node
     admin_node_command ADMIN_USER=$ADMIN_USER \
-        ADMIN_WORKSPACE=$ADMIN_WORKSPACE \
-        VARS="${LOGGING_DEFAULTS_OPT}" collect_logs.sh
+        ADMIN_WORKSPACE=$ADMIN_WORKSPACE collect_logs.sh
 }
 
 function exit_gracefully {
@@ -233,7 +232,6 @@ cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inven
 COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
 KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml"
-LOGGING_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/utils/kargo/roles/configure_logs/defaults/main.yml"
 
 if [ -n "$CUSTOM_YAML" ]; then
     echo "Uploading custom YAML for deployment..."
