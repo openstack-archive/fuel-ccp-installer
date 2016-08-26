@@ -34,9 +34,7 @@ In order to re-build the tarball with fresh info, run:
 
 .. code:: sh
 
-      ADMIN_WORKSPACE=$ws \
-      VARS="-e @${ws}utils/kargo/roles/configure_logs/defaults/main.yml" \
-      /usr/local/bin/collect_logs.sh
+      ADMIN_WORKSPACE=$ws /usr/local/bin/collect_logs.sh
 
 If you deploy from the vagrantfile, you may want to use its NFS mount for
 the installer repo and adjust the commands above like this:
@@ -50,6 +48,4 @@ the installer repo and adjust the commands above like this:
       -e @/vagrant/utils/kargo/roles/configure_logs/defaults/main.yml \
       /vagrant/utils/kargo/preinstall.yml
 
-      ADMIN_WORKSPACE=$ws \
-      VARS="-e @/vagrant/utils/kargo/roles/configure_logs/defaults/main.yml" \
-      /usr/local/bin/collect_logs.sh
+      ADMIN_WORKSPACE=$ws /usr/local/bin/collect_logs.sh

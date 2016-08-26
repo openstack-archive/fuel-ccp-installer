@@ -4,9 +4,10 @@ LOG_LEVEL=${LOG_LEVEL:--v}
 SSH_EXTRA_ARGS='-o\ StrictHostKeyChecking=no'
 ADMIN_USER=${ADMIN_USER:-vagrant}
 ADMIN_WORKSPACE=${ADMIN_WORKSPACE:-workspace}
-VARS=${VARS:--e ansible_ssh_user=vagrant -e human_readable_plugin=false}
 
 /usr/bin/ansible-playbook ${LOG_LEVEL} \
         --ssh-extra-args "$SSH_EXTRA_ARGS" -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-        -e worskpace=$ADMIN_WORKSPACE ${VARS} $ADMIN_WORKSPACE/kargo/scripts/collect-info.yaml
+        -e searchpath=$ADMIN_WORKSPACE \
+        -e @$ADMIN_WORKSPACE/utils/kargo/roles/configure_logs/defaults/main.yml \
+        $ADMIN_WORKSPACE/kargo/scripts/collect-info.yaml

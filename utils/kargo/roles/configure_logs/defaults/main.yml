@@ -15,8 +15,6 @@ callback_plugins:
     script_name: timestamp.py
 callback_plugin_path: /usr/share/ansible/plugins/callback
 # Define custom diag info to collect
-debug: false
-searchpath: "{{workspace|default('/home/vagrant/')}}"
 commands:
   - name: git_info
     cmd: find . -type d -name .git -execdir sh -c 'gen-gitinfos.sh global|head -12' \;
