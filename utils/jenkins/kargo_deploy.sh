@@ -199,59 +199,62 @@ if [ -z "$INHERIT_SSH_AGENT" ]; then
    admin_node_command chmod 600 .ssh/id_rsa
 fi
 
-
-# Try to get IPs from inventory if it isn't provided
-# Use git repo if available, then residual files from previous deploy, then
-# finally generate new inventory.
-
-if [[ -n "$INVENTORY_REPO" ]]; then
+# If no inventory repo, just make a local git repo and carry on and deploy.
+# Otherwise, clone it and decide on the final deployment data.
+if [ "${INVENTORY_REPO}" ]; then
     admin_node_command "sh -c 'git clone $INVENTORY_REPO $ADMIN_WORKSPACE/inventory'" || true
-    if [[ -n "$INVENTORY_COMMIT" ]]; then
+    if [ -n "${INVENTORY_COMMIT}" ]; then
         admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git fetch --all && git checkout $INVENTORY_COMMIT'"
     fi
 else
-    if [[ -z "$SLAVE_IPS" ]]; then
-        if admin_node_command stat $ADMIN_WORKSPACE/inventory/inventory.cfg; then
-            SLAVE_IPS=($(admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py print_ips))
-        else
-            echo "No slave nodes available. Unable to proceed!"
-            exit_gracefully 1
-        fi
+    echo "Generating ansible inventory on admin node..."
+    admin_node_command mkdir -p $ADMIN_WORKSPACE/inventory
+    admin_node_command git init $ADMIN_WORKSPACE/inventory
+fi
+
+echo "Uploading default settings and inventory..."
+cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
+cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
+if [ "${CUSTOM_YAML}" ]; then
+    echo "Uploading custom YAML for deployment..."
+    echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/custom.yaml"
+    custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
+fi
+if [ "${SLAVE_IPS}" ]; then
+    admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
+fi
+
+# Data committed to the inventory has the highest priority, then installer defaults
+echo "Deciding on deployment data to the inventory repo..."
+# Stage only new data files
+admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -o --exclude-standard | xargs -n1 git add'"
+# Reset changed data files
+admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -m | xargs -n1 git checkout -- .'"
+
+# Try to get IPs from inventory first
+if [ -z "${SLAVE_IPS}" ]; then
+    if admin_node_command stat $ADMIN_WORKSPACE/inventory/inventory.cfg; then
+        SLAVE_IPS=($(admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py print_ips))
     else
-        echo "Generating ansible inventory on admin node..."
-        admin_node_command mkdir -p $ADMIN_WORKSPACE/inventory
-        admin_node_command git init $ADMIN_WORKSPACE/inventory
-        admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
+        echo "No slave nodes available. Unable to proceed!"
+        exit_gracefully 1
     fi
 fi
 
-# TODO(mattymo): Compare timestamps to decide which default to use:
-# git-based inventory or from fuel-ccp-installer
-echo "Uploading default settings..."
-cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
-cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
 COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
 KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml"
 LOGGING_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/utils/kargo/roles/configure_logs/defaults/main.yml"
 
-if [ -n "$CUSTOM_YAML" ]; then
-    echo "Uploading custom YAML for deployment..."
-    echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/custom.yaml"
-    custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
-fi
-
 echo "Committing inventory changes..."
-admin_node_command git -C $ADMIN_WORKSPACE/inventory add --all
 if ! admin_node_command git config --get user.name; then
     admin_node_command git config --global user.name "Anonymous User"
     admin_node_command git config --global user.email "anon@example.org"
 fi
 # Commit only if there are changes
-if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --exit-code; then
-    admin_node_command git -C $ADMIN_WORKSPACE/inventory git commit -a -m "Automated commit"
+if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --cached --name-only --exit-code; then
+    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git commit -a -m Automated\ commit'"
 fi
-
 
 echo "Waiting for all nodes to be reachable by SSH..."
 wait_for_nodes ${SLAVE_IPS[@]}
