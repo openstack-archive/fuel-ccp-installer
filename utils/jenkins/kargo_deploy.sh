@@ -112,8 +112,8 @@ function wait_for_nodes {
 
 mkdir -p tmp logs
 
-# Allow non-Jenkins script to predefine info
-if [[ -z "$REAPPLY" && -z "$SLAVE_IPS" && -z "$ADMIN_IP" ]]; then
+# If SLAVE_IPS are specified or REAPPLY is set, then treat env as pre-provisioned
+if [[ -z "$REAPPLY" && -z "$SLAVE_IPS" ]]; then
     ENV_TYPE="fuel-devops"
     dos.py erase ${ENV_NAME} || true
     rm -rf logs/*
