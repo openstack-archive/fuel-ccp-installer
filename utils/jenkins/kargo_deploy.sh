@@ -193,11 +193,6 @@ echo "Checking out kargo playbook..."
 admin_node_command git clone "$KARGO_REPO" "$ADMIN_WORKSPACE/kargo" || true
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/kargo && git fetch --all && git checkout $KARGO_COMMIT'"
 
-if [ -z "$INHERIT_SSH_AGENT" ]; then
-   cat $WORKSPACE/id_rsa | admin_node_command "cat - > .ssh/id_rsa"
-   admin_node_command chmod 600 .ssh/id_rsa
-fi
-
 # If no inventory repo, just make a local git repo and carry on and deploy.
 # Otherwise, clone it and decide on the final deployment data.
 if [ "${INVENTORY_REPO}" ]; then
