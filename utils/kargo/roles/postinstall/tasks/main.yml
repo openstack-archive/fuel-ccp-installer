@@ -1,10 +1,34 @@
 ---
-- name: Install kpm via pip
-  command: pip install kpm
-  run_once: true
+- name: Ensure pool range is correct for hardcoded kubedns definition
+  assert:
+    that:
+      - "\"{{ kube_service_addresses }}\" == \"10.233.0.0/18\""
+# FIXME(mattymo): Shift to templated pods or revert to using KPM
+- name: Copy kubedns rc
+  copy:
+    src: kubedns-rc.yml
+    dest: /etc/kubernetes/kubedns-rc.yml
+    owner: root
+    group: root
+    mode: 0644
+  register: kubedns_rc
 
-- name: Deploy kubedns pod
-  command: "{{ bin_dir }}/kpm deploy kube-system/kubedns --namespace=kube-system"
+- name: Copy kubedns svc
+  copy:
+    src: kubedns-svc.yml
+    dest: /etc/kubernetes/kubedns-svc.yml
+    owner: root
+    group: root
+    mode: 0644
+  register: kubedns_svc
+
+- name: Deploy kubedns rc
+  command: "{{ bin_dir }}/kubectl replace --force -f /etc/kubernetes/kubedns-rc.yml"
+  when: kubedns_rc.changed
+
+- name: Deploy kubedns svc
+  command: "{{ bin_dir }}/kubectl replace --force  -f /etc/kubernetes/kubedns-svc.yml"
+  when: kubedns_svc.changed
 
 - name: Wait for kubedns to be ready
   shell: "nslookup kubernetes.default.svc.{{ cluster_name }} {{ dns_server }}"
