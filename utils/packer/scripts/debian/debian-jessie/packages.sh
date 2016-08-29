@@ -16,11 +16,9 @@ screen
 sshpass
 tmux
 python-dev
-python3-dev
 python-netaddr
 software-properties-common
 python-setuptools
-gcc
 "
 
 echo "==> Installing packages"
@@ -33,13 +31,15 @@ rm /tmp/get-pip.py
 pip install --upgrade pip
 
 # Preinstall Docker version required by Kargo:
-KARGO_DEFAULT_UBUNTU_URL="https://raw.githubusercontent.com/openstack/fuel-ccp-installer/master/utils/kargo/kargo_default_ubuntu.yaml"
-DOCKER_REQUIRED_VERSION=`wget --output-document=- ${KARGO_DEFAULT_UBUNTU_URL}\
+apt-get -y purge "lxc-docker*"
+apt-get -y purge "docker.io*"
+KARGO_DEFAULT_DEBIAN_URL="https://raw.githubusercontent.com/openstack/fuel-ccp-installer/master/utils/kargo/kargo_default_debian.yaml"
+DOCKER_REQUIRED_VERSION=`wget --output-document=- ${KARGO_DEFAULT_DEBIAN_URL}\
 | awk '/docker_version/ {gsub(/"/, "", $NF); print $NF}'`
 apt-get -y install apt-transport-https ca-certificates
 apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 \
 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-echo "deb https://apt.dockerproject.org/repo ubuntu-xenial main" \
+echo "deb https://apt.dockerproject.org/repo debian-jessie main" \
 > /etc/apt/sources.list.d/docker.list
 apt-get update
 DOCKER_APT_PACKAGE_VERSION=`apt-cache policy docker-engine \
