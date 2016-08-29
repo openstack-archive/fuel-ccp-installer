@@ -16,9 +16,11 @@ screen
 sshpass
 tmux
 python-dev
+python3-dev
 python-netaddr
 software-properties-common
 python-setuptools
+gcc
 "
 
 echo "==> Installing packages"
