@@ -132,7 +132,7 @@
       "scripts": [
         "scripts/debian/mirrors.sh",
         "scripts/debian/update.sh",
-        "scripts/debian/packages.sh",
+        "scripts/debian/debian-jessie/packages.sh",
         "scripts/docker_images.sh",
         "scripts/debian/console.sh",
         "scripts/debian/setup.sh",
