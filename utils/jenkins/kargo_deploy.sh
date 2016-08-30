@@ -298,7 +298,12 @@ with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e inventory_host
 
 echo "Deploying k8s via ansible..."
 with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
-deploy_res=0
+
+# Submit the commit to gerrit
+if admin_node_command test -e $ADMIN_WORKSPACE/inventory/.gitreview; then
+    admin_node_command git -C $ADMIN_WORKSPACE/inventory git review -s
+    admin_node_command git -C $ADMIN_WORKSPACE/inventory git review || true
+fi
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
@@ -353,4 +358,4 @@ fi
 
 # TODO(mattymo): Shift to FORCE_NEW instead of REAPPLY
 echo "To reapply deployment, run env REAPPLY=yes ADMIN_IP=$ADMIN_IP $0"
-exit_gracefully ${deploy_res}
+exit_gracefully 0
