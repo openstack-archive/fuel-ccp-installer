@@ -268,6 +268,7 @@ fi
 # Commit only if there are changes
 if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --cached --name-only --exit-code; then
     admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git commit -a -m Automated\ commit'"
+    COMMIT_DONE=true
 fi
 
 echo "Waiting for all nodes to be reachable by SSH..."
@@ -298,10 +299,19 @@ with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e inventory_host
 
 echo "Deploying k8s via ansible..."
 with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
-deploy_res=0
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
+
+# Submit the commit to gerrit
+if [ "${COMMIT_DONE}" = "true" ]; then
+    if admin_node_command test -e $ADMIN_WORKSPACE/inventory/.gitreview; then
+        echo "Changes were made to deployment. Proposing change request to configuration repository..."
+        admin_node_command git -C $ADMIN_WORKSPACE/inventory git review -s
+        admin_node_command git -C $ADMIN_WORKSPACE/inventory git review || true
+        echo "Go to the Gerrit link above and review the changes."
+    fi
+fi
 
 # FIXME(mattymo): Move this to underlay
 # setup VLAN if everything is ok and env will not be deleted
@@ -353,4 +363,4 @@ fi
 
 # TODO(mattymo): Shift to FORCE_NEW instead of REAPPLY
 echo "To reapply deployment, run env REAPPLY=yes ADMIN_IP=$ADMIN_IP $0"
-exit_gracefully ${deploy_res}
+exit_gracefully 0
