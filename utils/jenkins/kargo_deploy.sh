@@ -26,7 +26,7 @@ SSH_OPTIONS_COPYID="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 VM_LABEL=${BUILD_TAG:-unknown}
 
 KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
-KARGO_COMMIT=${KARGO_COMMIT:-master}
+KARGO_COMMIT=${KARGO_COMMIT:-origin/master}
 
 # Default deployment settings
 COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
