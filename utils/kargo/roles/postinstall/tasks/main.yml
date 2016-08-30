@@ -45,12 +45,6 @@
     group: root
     mode: 0755
 
-- name: Ensure dnsutils is installed
-  apt:
-    name: dnsutils
-    state: latest
-  when: ansible_os_family == "Debian"
-
 - name: Test networking connectivity
   shell: "bash {{ bin_dir }}/test_networking.sh"
   changed_when: false

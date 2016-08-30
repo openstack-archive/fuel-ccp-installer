@@ -19,3 +19,9 @@
 - name: Update hostname via hostnamectl
   command: hostnamectl set-hostname {{ inventory_hostname }}
   when: updated_etc_hosts.changed
+
+- name: Ensure dnsutils is installed
+  apt:
+    name: dnsutils
+    state: latest
+  when: ansible_os_family == "Debian"
