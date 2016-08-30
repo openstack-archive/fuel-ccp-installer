@@ -19,6 +19,7 @@ python-dev
 python-netaddr
 software-properties-common
 python-setuptools
+dnsutils
 "
 
 echo "==> Installing packages"
