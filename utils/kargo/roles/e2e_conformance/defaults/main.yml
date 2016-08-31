@@ -1,0 +1,2 @@
+e2e_conformance_image_repo: mirantis/k8s-conformance
+e2e_conformance_image_tag: latest
