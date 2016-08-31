@@ -1,0 +1,9 @@
+- name: Install e2e conformance test script
+  template:
+    src: run_e2e_conformance.j2
+    dest: "/usr/local/bin/run_e2e_conformance"
+    mode: 0755
+
+- name: Run e2e conformance test
+  shell: "/usr/local/bin/run_e2e_conformance"
+  changed_when: false
