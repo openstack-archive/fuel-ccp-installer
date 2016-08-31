@@ -1,0 +1,5 @@
+#!/bin/bash -e
+docker run --rm --net=host \
+       -e API_SERVER="http://127.0.0.1:{{ kube_apiserver_insecure_port | default("8080") }}" \
+       {{ e2e_conformance_image_repo }}:{{ e2e_conformance_image_tag }} 2>&1 | \
+  tee -a /var/log/e2e-conformance.log
