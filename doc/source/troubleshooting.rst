@@ -1,5 +1,9 @@
-Preliminary host configuration
-==============================
+===============
+Troubleshooting
+===============
+
+Calico related problems
+=======================
 
 If you use standalone bare metal servers, or if you experience issues with a
 Calico bird daemon and networking for a Kubernetes cluster VMs, ensure that
