@@ -24,6 +24,3 @@ searchdomains:
   - ccp.svc.cluster.local
 nameservers:
   - 8.8.8.8
-
-#Disable Kargo's kpm install of kubedns
-kpm_packages: []
