@@ -12,8 +12,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   quickstart
    host_requirements
-   admin_node
    inventory_repo
    packer
    collect_info
