@@ -2,8 +2,8 @@
 kube_network_plugin: "calico"
 #Required for calico
 kube_proxy_mode: "iptables"
-#Configure calico to set --nat-outgoing and --ipip pool option
-ipip: true
+#Configure calico to set --nat-outgoing, but not --ipip pool option
+ipip: false
 #Set kubernetes version. Note that v3.0.1 has bugs
 kube_version: "v1.3.5"
 #Override hyperkube image to use CoreOS v1.3.5
