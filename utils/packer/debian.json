@@ -17,7 +17,7 @@
     "accelerator": "kvm",
     "cpus": "1",
     "memory": "1024",
-    "disk_size": "10240",
+    "disk_size": "102400",
     "headless": "{{ env `HEADLESS` }}",
     "boot_wait": "10s",
     "install_vagrant_key": "true",
