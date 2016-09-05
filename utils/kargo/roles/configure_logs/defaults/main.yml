@@ -48,6 +48,12 @@ commands:
     cmd: kubectl get all --all-namespaces -o yaml
   - name: errors_info
     cmd: journalctl -p err --utc --no-pager
+  - name: etcd_indo
+    cmd: etcdctl --debug cluster-health
+  - name: calico_info
+    cmd: calicoctl status
+  - name: sysctl_info
+    cmd: sysctl -a
 logs:
   - /var/log/ansible/ansible.log
   - /var/log/syslog
