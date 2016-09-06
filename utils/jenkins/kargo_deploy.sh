@@ -127,8 +127,8 @@ function with_ansible {
 
 mkdir -p tmp logs
 
-# If SLAVE_IPS are specified or REAPPLY is set, then treat env as pre-provisioned
-if [[ -z "$REAPPLY" && -z "$SLAVE_IPS" ]]; then
+# If INVENTORY_REPO or SLAVE_IPS are specified or REAPPLY is set, then treat env as pre-provisioned
+if [[ -z "$INVENTORY_REPO" && -z "$REAPPLY" && -z "$SLAVE_IPS" ]]; then
     ENV_TYPE="fuel-devops"
     dos.py erase ${ENV_NAME} || true
     rm -rf logs/*
