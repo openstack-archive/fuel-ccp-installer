@@ -14,10 +14,9 @@ else
     CONF_PATH=${CONF_PATH:-${BASH_SOURCE%/*}/default30-kargo.yaml}
 fi
 
-IMAGE_PATH=${IMAGE_PATH:-bootstrap/output-qemu/ubuntu1404}
-# detect OS type from the image name, assume debian by default
-NODE_BASE_OS=$(basename ${IMAGE_PATH} | grep -io -e ubuntu -e debian)
-NODE_BASE_OS="${NODE_BASE_OS:-debian}"
+IMAGE_PATH=${IMAGE_PATH:-$HOME/packer-ubuntu-16.04.1-server-amd64.qcow2}
+# detect OS type from the image name, assume ubuntu by default
+NODE_BASE_OS=$(basename ${IMAGE_PATH} | grep -io -e ubuntu -e debian || echo -n "ubuntu")
 ADMIN_NODE_BASE_OS="${ADMIN_NODE_BASE_OS:-$NODE_BASE_OS}"
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
