@@ -39,7 +39,7 @@ required_ansible_version="2.1.0"
 
 function collect_info {
     # Get diagnostic info and store it as the logs.tar.gz at the admin node
-    admin_node_command ADMIN_USER=$ADMIN_USER \
+    admin_node_command ADMIN_USER=$ADMIN_USER LOG_LEVEL="" \
         ADMIN_WORKSPACE=$ADMIN_WORKSPACE collect_logs.sh
 }
 
