@@ -13,7 +13,7 @@ Contents
    :maxdepth: 2
 
    quickstart
-   host_requirements
+   troubleshooting
    inventory_repo
    packer
    collect_info
