@@ -243,8 +243,13 @@ fi
 echo "Deciding on deployment data to the inventory repo..."
 # Stage only new data files
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -o --exclude-standard | xargs -n1 git add'"
-# Reset changed data files
-admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -m | xargs -n1 git checkout -- .'"
+if [ -z "${INVENTORY_REPO}" ]; then
+    # Local only repos must stage any changes as well
+    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -m | xargs -n1 git add'"
+else
+    # Reset changed data files for remote repos
+    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -m | xargs -n1 git checkout -- .'"
+fi
 
 # Try to get IPs from inventory first
 if [ -z "${SLAVE_IPS}" ]; then
