@@ -13,6 +13,9 @@ NODE_BASE_OS=${NODE_BASE_OS:-ubuntu}
 OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
 OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
 
+SLAVE_IPS=( $SLAVE_IPS )
+ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
+
 required_ansible_version="2.1.0"
 
 function exit_gracefully {
@@ -86,16 +89,6 @@ function with_ansible {
 
 mkdir -p tmp logs
 
-# If SLAVE_IPS are specified or REAPPLY is set, then treat env as pre-provisioned
-if [[ -z "$REAPPLY" && -z "$SLAVE_IPS" ]]; then
-    SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_slaves_ips | tr -d "[],'"))
-    # Set ADMIN_IP=local to use current host to run ansible
-    ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
-    wait_for_nodes $ADMIN_IP
-else
-    SLAVE_IPS=( $SLAVE_IPS )
-    ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
-fi
 
 # Trap errors during env preparation stage
 trap exit_gracefully ERR INT TERM
