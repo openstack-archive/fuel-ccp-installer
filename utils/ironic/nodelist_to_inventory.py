@@ -4,6 +4,8 @@
 #   openstack --os-cloud=bifrost baremetal node list -f yaml --noindent \
 #   --fields name instance_info | python nodelist_to_inventory.py
 
+from __future__ import print_function
+
 import sys
 import yaml
 
@@ -16,4 +18,4 @@ for node in nodes:
             groups[tag] = {}
         ip = node['Instance Info']['ipv4_address']
         groups[tag][node['Name']] = {'ip': ip}
-print yaml.dump(groups, indent=2, default_flow_style=False)
+print(yaml.dump(groups, indent=2, default_flow_style=False))
