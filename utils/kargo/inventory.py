@@ -7,7 +7,7 @@
 # Delete a host: kargo_inventory.py -10.10.1.3
 # Delete a host by id: kargo_inventory.py -node1
 
-from collections import OrderedDict
+import collections
 try:
     import configparser
 except ImportError:
@@ -93,7 +93,7 @@ class KargoInventory(object):
             raise ValueError("Host name must end in an integer")
 
     def build_hostnames(self, changed_hosts):
-        existing_hosts = OrderedDict()
+        existing_hosts = collections.OrderedDict()
         highest_host_id = 0
         try:
             for host, opts in self.config.items('all'):
