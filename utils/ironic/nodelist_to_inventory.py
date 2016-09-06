@@ -16,4 +16,4 @@ for node in nodes:
             groups[tag] = {}
         ip = node['Instance Info']['ipv4_address']
         groups[tag][node['Name']] = {'ip': ip}
-print yaml.dump(groups, indent=2, default_flow_style=False)
+print(yaml.dump(groups, indent=2, default_flow_style=False))
