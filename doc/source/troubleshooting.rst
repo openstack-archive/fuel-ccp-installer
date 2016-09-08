@@ -1,3 +1,5 @@
+.. _tshoot:
+
 ===============
 Troubleshooting
 ===============
@@ -16,3 +18,6 @@ netfilter for bridge interfaces is disabled for your host node(s):
 Otherwise, bird daemon inside Calico won't function correctly because of
 libvirt and NAT networks. More details can be found in this
 `bug <https://bugzilla.redhat.com/show_bug.cgi?id=512206>`_.
+
+Then reporting issues, please also make sure to include details on the host
+OS type and its kernel version.
