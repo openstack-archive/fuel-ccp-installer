@@ -13,6 +13,7 @@ Contents
    :maxdepth: 1
 
    quickstart
+   vagrant
    troubleshooting
    inventory_repo
    packer
