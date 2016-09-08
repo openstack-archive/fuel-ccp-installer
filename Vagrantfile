@@ -29,6 +29,7 @@ $neutron_subnet = cfg['neutron_subnet'] || "#{$subnet_prefix}.3"
 $mgmt_cidr = cfg['mgmt_cidr'] || "#{$subnet_prefix}.2.0/24"
 $box = cfg['box']
 $sync_type = cfg['sync_type'] || "rsync"
+$align_kernels = cfg['align_kernels'] || "true"
 
 $kargo_repo = ENV['KARGO_REPO'] || cfg['kargo_repo']
 $kargo_commit = ENV['KARGO_COMMIT'] || cfg['kargo_commit']
@@ -53,6 +54,10 @@ Vagrant.configure("2") do |config|
   # Serialize nodes startup order for the virtualbox provider
   $num_instances.downto(1).each do |i|
     config.vm.define vm_name = "%s%d" % [$instance_name_prefix, i] do |config|
+      if $align_kernels == "true"
+        rebuild = with_env("/vagrant/utils/packer/rebuild.sh")
+        config.vm.provision "shell", inline: "#{rebuild}", privileged: true
+      end
       if i != $kargo_node_index
         config.vm.provision "shell", inline: "/bin/true"
       else
@@ -125,6 +130,11 @@ Vagrant.configure("2") do |config|
         domain.volume_cache = "unsafe"
         domain.disk_bus = "virtio"
         domain.graphics_ip = "0.0.0.0"
+        if $align_kernels == "true"
+          domain.kernel = "/vmlinuz"
+          domain.initrd = "/initrd.img"
+          domain.cmd_line = "root=/dev/vda1 cgroup_enable=memory swapaccount=1 net.ifnames=0 biosdevname=0"
+        end
       end
 
       if $sync_type  == 'nfs'
