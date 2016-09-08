@@ -12,6 +12,7 @@ Contents
 .. toctree::
    :maxdepth: 1
 
+   contributing
    quickstart
    troubleshooting
    inventory_repo
