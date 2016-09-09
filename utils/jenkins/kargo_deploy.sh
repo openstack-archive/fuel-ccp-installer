@@ -299,7 +299,9 @@ with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall
 
 echo "Configuring DNS settings on nodes via ansible..."
 # FIXME(bogdando) a hack to w/a https://github.com/kubespray/kargo/issues/452
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e inventory_hostname=skip_k8s_part
+# and https://bugs.launchpad.net/fuel-ccp/+bug/1621503
+hacks="-e ansible_ssh_host=127.0.0.1 -e inventory_hostname=skip_k8s_part"
+with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq ${hacks}
 
 echo "Deploying k8s via ansible..."
 with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
