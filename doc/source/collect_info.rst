@@ -1,3 +1,5 @@
+.. _diag-info-tools:
+
 Diagnostic info collection tools
 ================================
 
