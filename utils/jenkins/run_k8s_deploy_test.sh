@@ -8,7 +8,7 @@ export BUILD_TAG=${BUILD_TAG:-unknown}
 ./utils/jenkins/kargo_deploy.sh
 
 # Archive logs if they were generated
-mkdir "${WORKSPACE}/_artifacts"
+mkdir -p "${WORKSPACE}/_artifacts"
 if [ -f "${WORKSPACE}/logs.tar.gz" ]; then
     mv "${WORKSPACE}/logs.tar.gz" "${WORKSPACE}/_artifacts"
 fi
