@@ -19,7 +19,7 @@ forwarded_ports:
   9090: 19090
 
 # Networking config
-subnet_prefix: "172.17"
+subnet_prefix: "10.91"
 
 # Kargo config for a K8s cluster
 kargo_repo: "https://github.com/kubespray/kargo.git"
