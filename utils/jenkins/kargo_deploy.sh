@@ -8,6 +8,18 @@ ADMIN_USER=${ADMIN_USER:-vagrant}
 WORKSPACE=${WORKSPACE:-.}
 ENV_NAME=${ENV_NAME:-kargo-example}
 SLAVES_COUNT=${SLAVES_COUNT:-0}
+# adjust ansible 'forks' with slave nodes count
+if [ "$SLAVES_COUNT" -gt 1 ]; then
+    if [ "$SLAVES_COUNT" -ge 10 ] && [ "$SLAVES_COUNT" -le 50 ]; then
+        $ANSIBLE_FORKS=$SLAVES_COUNT
+    elif [ "$SLAVES_COUNT" -gt 50 ]; then
+        $ANSIBLE_FORKS=50
+    else
+        $ANSIBLE_FORKS=10
+    fi
+fi
+FORKS="-e forks_number=${ANSIBLE_FORKS}"
+
 if [ "$VLAN_BRIDGE" ]; then
     CONF_PATH=${CONF_PATH:-${BASH_SOURCE%/*}/default30-kargo-bridge.yaml}
 else
@@ -113,7 +125,7 @@ function with_ansible {
     until admin_node_command /usr/bin/ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-        $@ $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
+        $@ $FORKS $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
         $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
             if [[ $tries > 1 ]]; then
                 (( tries-- ))

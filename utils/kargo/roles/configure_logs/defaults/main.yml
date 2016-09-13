@@ -1,5 +1,6 @@
 log_path: /var/log/ansible/
 conf_file: /etc/ansible/ansible.cfg
+forks_number: 10
 callback_plugins:
   - name: human_readable_plugin
     enabled: true

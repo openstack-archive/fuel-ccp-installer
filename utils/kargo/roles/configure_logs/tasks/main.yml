@@ -1,4 +1,11 @@
 ---
+
+- name: Configure logs | set ansible forks number
+  lineinfile:
+    line: "forks={{forks_number}}"
+    regexp: "^#forks|^forks"
+    dest: "{{conf_file}}"
+
 - name: Configure logs | ensure log path
   file:
     path: "{{log_path}}"
