@@ -8,6 +8,7 @@ ADMIN_USER=${ADMIN_USER:-vagrant}
 WORKSPACE=${WORKSPACE:-.}
 ENV_NAME=${ENV_NAME:-kargo-example}
 SLAVES_COUNT=${SLAVES_COUNT:-0}
+
 if [ "$VLAN_BRIDGE" ]; then
     CONF_PATH=${CONF_PATH:-${BASH_SOURCE%/*}/default30-kargo-bridge.yaml}
 else
@@ -113,7 +114,7 @@ function with_ansible {
     until admin_node_command /usr/bin/ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-        $@ $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
+        --forks=$ANSIBLE_FORKS $@ $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
         $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
             if [[ $tries > 1 ]]; then
                 (( tries-- ))
@@ -287,6 +288,13 @@ for slaveip in ${SLAVE_IPS[@]}; do
     # Add VM label:
     ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
 done
+
+# Calculate parallel ansible execution
+if [[ "${#SLAVE_IPS[@]}" < 50 ]]; then
+    ANSIBLE_FORKS="${#SLAVE_IPS[@]}"
+else
+    ANSIBLE_FORKS=50
+fi
 
 # Stop trapping pre-setup tasks
 set +e

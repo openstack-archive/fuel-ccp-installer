@@ -1,4 +1,5 @@
 ---
+
 - name: Configure logs | ensure log path
   file:
     path: "{{log_path}}"
