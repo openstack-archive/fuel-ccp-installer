@@ -88,24 +88,11 @@ function admin_node_command {
 }
 
 function wait_for_nodes {
+    pssh_opts="-A -l ${ADMIN_USER} -t 30 -p 50"
     for IP in $@; do
-        elapsed_time=0
-        master_wait_time=30
-        while true; do
-            report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} -o PreferredAuthentications=password ${ADMIN_USER}@${IP} echo ok || echo not ready)
-
-            if [ "${report}" = "ok" ]; then
-                break
-            fi
-
-            if [ "${elapsed_time}" -gt "${master_wait_time}" ]; then
-                exit 2
-            fi
-
-            sleep 1
-            let elapsed_time+=1
-        done
+        pssh_opts+=" -H $IP"
     done
+    sshpass -p $ADMIN_PASSWORD | parallel-ssh $pssh_opts -x "$SSH_OPTIONS" echo "ok"
 }
 
 function with_ansible {
@@ -166,6 +153,9 @@ fi
 # Install missing packages on the host running this script
 if ! type sshpass > /dev/null; then
     sudo apt-get update && sudo apt-get install -y sshpass
+fi
+if ! type parallel-ssh > /dev/null; then
+    sudo apt-get update && sudo apt-get install -y pssh
 fi
 
 
@@ -279,14 +269,18 @@ echo "Waiting for all nodes to be reachable by SSH..."
 wait_for_nodes ${SLAVE_IPS[@]}
 
 echo "Adding ssh key authentication and labels to nodes..."
+# FIXME(mattymo): Underlay provisioner should set up keys
+# FIXME(mattymo): Underlay provisioner should set label file
+pssh_opts="-A -p 50"
 for slaveip in ${SLAVE_IPS[@]}; do
-    # FIXME(mattymo): Underlay provisioner should set up keys
-    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
-
-    # FIXME(mattymo): Underlay provisioner should set label file
-    # Add VM label:
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
+    pssh_opts+=" -H $slaveip "
 done
+sshpass -p $ADMIN_PASSWORD \
+    parallel-ssh $pssh_opts -x "$SSH_OPTIONS_COPYID" -l $ADMIN_USER \
+    "echo -e '$(ssh-add -L)' >> .ssh/authorized_keys && \
+    awk '!a[\$0]++' .ssh/authorized_keys > .ssh/authorized_keys_filtered && \
+    mv .ssh/authorized_keys_filtered .ssh/authorized_keys && \
+    echo $VM_LABEL > vm_label"
 
 # Stop trapping pre-setup tasks
 set +e
