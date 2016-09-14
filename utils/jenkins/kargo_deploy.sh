@@ -276,19 +276,6 @@ if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --cached --name-o
     COMMIT_DONE=true
 fi
 
-echo "Waiting for all nodes to be reachable by SSH..."
-wait_for_nodes ${SLAVE_IPS[@]}
-
-echo "Adding ssh key authentication and labels to nodes..."
-for slaveip in ${SLAVE_IPS[@]}; do
-    # FIXME(mattymo): Underlay provisioner should set up keys
-    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${slaveip} -p 22
-
-    # FIXME(mattymo): Underlay provisioner should set label file
-    # Add VM label:
-    ssh $SSH_OPTIONS $ADMIN_USER@$slaveip "echo $VM_LABEL > /home/${ADMIN_USER}/vm_label"
-done
-
 # Calculate parallel ansible execution
 if [[ "${#SLAVE_IPS[@]}" < 50 ]]; then
     ANSIBLE_FORKS="${#SLAVE_IPS[@]}"
@@ -300,7 +287,7 @@ fi
 set +e
 
 echo "Running pre-setup steps on nodes via ansible..."
-with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml
+with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml -e "ansible_ssh_pass=${ADMIN_PASSWORD}"
 
 echo "Running kargo preinstall early via ansible..."
 with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall
