@@ -34,6 +34,7 @@ COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
 OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
 LOG_LEVEL=${LOG_LEVEL:--v}
+ANSIBLE_TIMEOUT=${ANSIBLE_TIMEOUT:-600}
 
 required_ansible_version="2.1.0"
 
@@ -114,7 +115,8 @@ function with_ansible {
     until admin_node_command /usr/bin/ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-        --forks=$ANSIBLE_FORKS $@ $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
+        --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT $@ \
+        $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
         $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
             if [[ $tries > 1 ]]; then
                 (( tries-- ))
