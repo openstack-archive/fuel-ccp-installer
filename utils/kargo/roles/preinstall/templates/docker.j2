@@ -1,0 +1,6 @@
+# Deployed by Ansible
+{% if network_plugin == "flannel" %}
+DOCKER_OPTS="--bip={{ flannel_subnet }} --mtu={{ flannel_mtu }} {% if docker_options is defined %}{{ docker_options }}{% endif %}"
+{% else %}
+DOCKER_OPTIONS="{% if docker_options is defined %}{{ docker_options }}{% endif %}"
+{% endif %}
