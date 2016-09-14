@@ -1,0 +1,23 @@
+[kube-master]
+node1
+node2
+
+[all]
+node1 	 ansible_ssh_host=10.90.0.2 ip=10.90.0.2
+node2 	 ansible_ssh_host=10.90.0.3 ip=10.90.0.3
+node3 	 ansible_ssh_host=10.90.0.4 ip=10.90.0.4
+
+[k8s-cluster:children]
+kube-node
+kube-master
+
+[kube-node]
+node1
+node2
+node3
+
+[etcd]
+node1
+node2
+node3
+
