@@ -300,7 +300,7 @@ fi
 set +e
 
 echo "Running pre-setup steps on nodes via ansible..."
-with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml
+with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml -e "ansible_ssh_pass=${ADMIN_PASSWORD}"
 
 echo "Running kargo preinstall early via ansible..."
 with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall
