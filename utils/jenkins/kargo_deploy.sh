@@ -372,7 +372,8 @@ else
     echo "**************************************"
     echo "**************************************"
 fi
-
+# test for ci
+exit_gracefully 1
 # TODO(mattymo): Shift to FORCE_NEW instead of REAPPLY
 echo "To reapply deployment, run env REAPPLY=yes ADMIN_IP=$ADMIN_IP $0"
 exit_gracefully 0
