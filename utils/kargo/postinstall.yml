@@ -1,5 +1,5 @@
 ---
-- hosts: kube-master[0]
+- hosts: k8s-cluster
   roles:
     - { role: postinstall, tags: postinstall }
 
