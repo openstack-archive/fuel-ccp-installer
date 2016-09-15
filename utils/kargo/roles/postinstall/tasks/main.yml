@@ -16,6 +16,9 @@
 
 - name: Test networking connectivity
   shell: "bash {{ bin_dir }}/test_networking.sh"
+  environment:
+    ADMIN_IP: "{{ hostvars[groups['kube-master'][0]]['ip'] | default(hostvars[groups['kube-master'][0]]['ansible_default_ipv4']['address']) }}"
+    SLAVE_IPS: "{{ ip }}"
   changed_when: false
   become: no
 
@@ -27,7 +30,9 @@
     group: root
     mode: 0644
   register: dashboard
+  delegate_to: "{{groups['kube-master'][0]}}"
 
 - name: Create Kubernetes dashboard
   command: "{{ bin_dir }}/kubectl create -f /etc/kubernetes/kubernetes-dashboard.yml"
   when: dashboard.changed
+  delegate_to: "{{groups['kube-master'][0]}}"
