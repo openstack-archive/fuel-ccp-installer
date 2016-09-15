@@ -2,8 +2,8 @@
 set -xe
 
 # for now we assume that master ip is 10.0.0.2 and slaves ips are 10.0.0.{3,4,5,...}
-ADMIN_PASSWORD=${ADMIN_PASSWORD:-vagrant}
 ADMIN_USER=${ADMIN_USER:-vagrant}
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-vagrant}
 
 WORKSPACE=${WORKSPACE:-.}
 ENV_NAME=${ENV_NAME:-kargo-example}
@@ -21,6 +21,9 @@ NODE_BASE_OS=$(basename ${IMAGE_PATH} | grep -io -e ubuntu -e debian || echo -n 
 ADMIN_NODE_BASE_OS="${ADMIN_NODE_BASE_OS:-$NODE_BASE_OS}"
 DEPLOY_TIMEOUT=${DEPLOY_TIMEOUT:-60}
 
+if [ -n "$USE_SSH_PASSWORD" ]; then
+    SSH_WRAPPER="sshpass -p ${ADMIN_PASSWORD}"
+fi
 SSH_OPTIONS="-A -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 SSH_OPTIONS_COPYID="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 VM_LABEL=${BUILD_TAG:-unknown}
@@ -94,7 +97,7 @@ function wait_for_nodes {
         elapsed_time=0
         master_wait_time=30
         while true; do
-            report=$(sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} -o PreferredAuthentications=password ${ADMIN_USER}@${IP} echo ok || echo not ready)
+            report=$(${SSH_WRAPPER} ssh ${SSH_OPTIONS} -o PreferredAuthentications=password ${ADMIN_USER}@${IP} echo ok || echo not ready)
 
             if [ "${report}" = "ok" ]; then
                 break
@@ -177,7 +180,7 @@ fi
 echo "Preparing admin node..."
 if [[ "$ADMIN_IP" != "local" ]]; then
     ADMIN_WORKSPACE="workspace"
-    sshpass -p $ADMIN_PASSWORD ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${ADMIN_IP} -p 22
+    $SSH_WRAPPER ssh-copy-id $SSH_OPTIONS_COPYID -o PreferredAuthentications=password $ADMIN_USER@${ADMIN_IP} -p 22
 else
     ADMIN_WORKSPACE="$WORKSPACE"
 fi
@@ -321,7 +324,7 @@ if [ "$VLAN_BRIDGE" ] && [ "${DONT_DESTROY_ON_SUCCESS}" = "1" ];then
     for IP in ${SLAVE_IPS[@]}; do
         bridged_iface_mac="`ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_bridged_iface_mac $IP`"
 
-        sshpass -p ${ADMIN_PASSWORD} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} bash -s <<EOF >>VLAN_IPS
+        ${SSH_WRAPPER} ssh ${SSH_OPTIONS} ${ADMIN_USER}@${IP} bash -s <<EOF >>VLAN_IPS
 bridged_iface=\$(/sbin/ifconfig -a|awk -v mac="$bridged_iface_mac" '\$0 ~ mac {print \$1}' 'RS=\n\n')
 sudo ip route del default
 sudo dhclient "\${bridged_iface}"
