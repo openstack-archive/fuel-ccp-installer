@@ -279,10 +279,10 @@ if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --cached --name-o
 fi
 
 # Calculate parallel ansible execution
-if [[ "${#SLAVE_IPS[@]}" < 50 ]]; then
+if [[ "${#SLAVE_IPS[@]}" -lt 150 ]]; then
     ANSIBLE_FORKS="${#SLAVE_IPS[@]}"
 else
-    ANSIBLE_FORKS=50
+    ANSIBLE_FORKS=150
 fi
 
 # Stop trapping pre-setup tasks
