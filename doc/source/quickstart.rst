@@ -49,7 +49,7 @@ Create deployment script:
 
 ::
 
-    cat > ~/deploy-k8s.sh << EOF
+    cat > ./deploy-k8s.sh << EOF
     #!/bin/bash
     set -ex
 
@@ -57,11 +57,11 @@ Create deployment script:
     export ADMIN_IP="10.90.0.2"
     export SLAVE_IPS="10.90.0.2 10.90.0.3 10.90.0.4"
     export DEPLOY_METHOD="kargo"
-    export WORKSPACE="~/workspace"
+    export WORKSPACE="${HOME}/workspace"
 
     mkdir -p $WORKSPACE
-    cd ~/fuel-ccp-installer
-    bash -x "~/utils/jenkins/run_k8s_deploy_test.sh"
+    cd ./fuel-ccp-installer
+    bash -x "./utils/jenkins/run_k8s_deploy_test.sh"
     EOF
 
 - ``ADMIN_IP`` - IP of the node which will run ansible. When the `$ADMIN_IP`
