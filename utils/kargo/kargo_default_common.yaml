@@ -24,3 +24,9 @@ searchdomains:
   - ccp.svc.cluster.local
 nameservers:
   - 8.8.8.8
+
+# Certificates for nodes to be preinstalled
+#certificates:
+#  - name: hyperkube
+#    pem: "-----BEGIN CERTIFICATE-----
+
