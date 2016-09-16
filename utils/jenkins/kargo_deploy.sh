@@ -308,8 +308,8 @@ with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
 if [ "${COMMIT_DONE}" = "true" ]; then
     if admin_node_command test -e $ADMIN_WORKSPACE/inventory/.gitreview; then
         echo "Changes were made to deployment. Proposing change request to configuration repository..."
-        admin_node_command git -C $ADMIN_WORKSPACE/inventory git review -s
-        admin_node_command git -C $ADMIN_WORKSPACE/inventory git review || true
+        admin_node_command git -C $ADMIN_WORKSPACE/inventory review -s
+        admin_node_command git -C $ADMIN_WORKSPACE/inventory review || true
         echo "Go to the Gerrit link above and review the changes."
     fi
 fi
