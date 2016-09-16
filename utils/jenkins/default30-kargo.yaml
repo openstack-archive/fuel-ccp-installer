@@ -26,8 +26,16 @@ template:
 
       public-pool01:
         net: *pool_default
+
       neutron-pool01:
         net: *pool_default
+        params:
+          vlan_start: 1310
+          ip_reserved:
+            gateway: +1
+            l2_network_device: +1
+          ip_ranges:
+            dhcp: [+2, -32]
 
     groups:
      - name: default
@@ -58,7 +66,9 @@ template:
 
          neutron:
            address_pool: neutron-pool01
-           dhcp: false
+           dhcp: true
+           forward:
+             mode: nat
 
        nodes:
         - name: slave-0
