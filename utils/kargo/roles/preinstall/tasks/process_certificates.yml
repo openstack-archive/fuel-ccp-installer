@@ -1,0 +1,40 @@
+---
+- name: Create temp cert files
+  local_action: copy content={{ item.pem }} dest=/tmp/{{ item.name }} mode="0400"
+  become: false
+  run_once: true
+  with_items: "{{ certificates|default([]) }}"
+
+- name: Determine selfsigned certs
+  local_action: shell echo /tmp/"{{ item.name }}" ;
+    [ "$(openssl x509 -noout -subject -in /tmp/{{ item.name }}|awk '{print $2}')" = "$(openssl x509 -noout -issuer -in /tmp/{{ item.name }}|awk '{print $2}')" ]
+  become: false
+  run_once: true
+  register: certscheck
+  ignore_errors: yes
+  with_items: "{{ certificates|default([]) }}"
+
+- name: Get self signed certs
+  local_action: slurp src={{ item.stdout }}
+  become: false
+  run_once: true
+  register: self_signed_certs
+  when: item.rc == 0
+  with_items: "{{ certscheck.results }}"
+
+- name: Remove temp cert files
+  local_action: file dest=/tmp/{{ item.name }} state=absent
+  become: false
+  run_once: true
+  with_items: "{{ certificates|default([]) }}"
+
+- name: Mark self signed certs as trusted for nodes
+  copy:
+    content: "{{ item.content|b64decode }}"
+    dest: "/usr/local/share/ca-certificates/{{ item.source|basename }}"
+    force: yes
+    mode: "0600"
+    owner: "root"
+  notify: Preinstall | update certs
+  become: true
+  with_items: "{{ self_signed_certs.results }}"
