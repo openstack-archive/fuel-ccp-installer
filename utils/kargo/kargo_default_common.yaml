@@ -24,3 +24,10 @@ searchdomains:
   - ccp.svc.cluster.local
 nameservers:
   - 8.8.8.8
+
+# Certificates to be preinstalled for cluster nodes, if self-signed
+# NOTE: indentation is crucial!
+#certificates:
+#  - name: foo
+#    pem: |
+#      -----BEGIN CERTIFICATE-----
