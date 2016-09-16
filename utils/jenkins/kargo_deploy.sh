@@ -232,11 +232,15 @@ fi
 echo "Uploading default settings and inventory..."
 cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
-if [ "${CUSTOM_YAML}" ]; then
+
+if [[ -e "${CUSTOM_YAML}" ]]; then
     echo "Uploading custom YAML for deployment..."
     echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/custom.yaml"
     custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
+elif admin_node_command test -e $ADMIN_WORKSPACE/inventory/custom.yaml; then
+    custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
 fi
+
 if [ "${SLAVE_IPS}" ]; then
     admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
 fi
