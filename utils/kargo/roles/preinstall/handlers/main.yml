@@ -1,0 +1,4 @@
+---
+- name: Preinstall | update certs
+  command: update-ca-certificates
+  become: true
