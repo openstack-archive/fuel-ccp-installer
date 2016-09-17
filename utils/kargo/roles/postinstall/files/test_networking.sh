@@ -2,6 +2,7 @@
 test_networking() {
     SLAVE_IPS=${SLAVE_IPS:-changeme}
     ADMIN_IP=${ADMIN_IP:-changeme}
+    ADMIN_USER=${ADMIN_USER:-vagrant}
 
     #Uncomment and set if running manually
     #SLAVE_IPS=(10.10.0.2 10.10.0.3 10.10.0.3)
@@ -16,7 +17,6 @@ test_networking() {
         fi
     fi
 
-    ADMIN_USER="vagrant"
     SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownhostsFile=/dev/null"
     if type kubectl; then
         kubedns_ip=$(kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
