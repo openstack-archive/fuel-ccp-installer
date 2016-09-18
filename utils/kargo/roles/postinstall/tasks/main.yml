@@ -17,6 +17,8 @@
 - name: Test networking connectivity
   shell: "bash {{ bin_dir }}/test_networking.sh"
   environment:
+    KUBEDNS_IP: "{{ skydns_server }}"
+    DNSMASQ_IP: "{{ dns_server }}"
     ADMIN_USER: "{{ ansible_user }}"
     ADMIN_IP: "{{ hostvars[groups['kube-master'][0]]['ip'] | default(hostvars[groups['kube-master'][0]]['ansible_default_ipv4']['address']) }}"
     SLAVE_IPS: "{{ ip }}"
