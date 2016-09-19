@@ -20,6 +20,7 @@ Contents
    generate_inventory
    packer
    collect_info
+   configurable_params
 
 Search in this guide
 ~~~~~~~~~~~~~~~~~~~~
