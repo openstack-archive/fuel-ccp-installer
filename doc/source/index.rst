@@ -21,6 +21,7 @@ Contents
    packer
    collect_info
    specify_hyperkube_image
+   configurable_params
 
 Search in this guide
 ~~~~~~~~~~~~~~~~~~~~
