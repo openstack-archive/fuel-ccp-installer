@@ -21,7 +21,10 @@
     user: "{{ ansible_ssh_user }}"
     key: "{{ item }}"
     state: present
-  with_items: ssh_pubkeys.stdout_lines
+  with_items: "{{ ssh_pubkeys.stdout_lines }}"
+
+- include: process_certificates.yml
+  when: trust_self_signed_certs|bool
 
 - name: Set correct /etc/hosts entry
   register: updated_etc_hosts
