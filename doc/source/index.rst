@@ -14,6 +14,7 @@ Contents
 
    contributing
    quickstart
+   vagrant
    troubleshooting
    inventory_repo
    packer
