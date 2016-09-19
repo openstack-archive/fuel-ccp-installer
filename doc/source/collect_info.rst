@@ -7,10 +7,10 @@ Configuring ansible logs and plugins
 ------------------------------------
 
 Ansible logs and plugins are configured with the preinstall role and playbook
-located in the `utils/kargo` directory.
+located in the ``utils/kargo`` directory.
 
 In order to make changes to logs configuration without running the
-`kargo_deploy.sh` completely, run the following Ansible command:
+``kargo_deploy.sh`` completely, run the following Ansible command:
 
 .. code:: sh
 
@@ -21,16 +21,16 @@ In order to make changes to logs configuration without running the
       -e @${ws}utils/kargo/roles/configure_logs/defaults/main.yml \
       ${ws}utils/kargo/preinstall.yml
 
-Note that the `ws` var should point to the actual admin workspace directory.
+Note that the ``ws`` var should point to the actual admin workspace directory.
 
 Collecting diagnostic info
 --------------------------
 
 There is a diagnostic info helper script located in the
-`/usr/local/bin/collect_logs.sh` directory. It issues commands and collects
-files given in the `${ws}utils/kargo/roles/configure_logs/defaults/main.yml`
+``/usr/local/bin/collect_logs.sh`` directory. It issues commands and collects
+files given in the ``${ws}utils/kargo/roles/configure_logs/defaults/main.yml``
 file, from all of the cluster nodes online. Results are aggregated to the
-admin node in the `logs.tar.gz` tarball.
+admin node in the ``logs.tar.gz`` tarball.
 
 In order to re-build the tarball with fresh info, run:
 

@@ -9,8 +9,8 @@ Requirements:
 * Plugin vagrant-vbguest >= 0.13.0
 
 To start with defaults, just run ``vagrant up``. To tweak defaults, see the
-`vagrant-settings.yaml_defaults` file. You can rename the file as
-`vagrant-settings.yaml` end edit it to override defaults as well.
+``vagrant-settings.yaml_defaults`` file. You can rename the file as
+``vagrant-settings.yaml`` end edit it to override defaults as well.
 
 .. note:: Make sure the default network choice doesn't conflict with existing
      host networks!
