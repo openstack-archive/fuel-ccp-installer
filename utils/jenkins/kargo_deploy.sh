@@ -233,7 +233,7 @@ echo "Uploading default settings and inventory..."
 cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
 
-if [[ -e "${CUSTOM_YAML}" ]]; then
+if [[ -n "${CUSTOM_YAML}" ]]; then
     echo "Uploading custom YAML for deployment..."
     echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/custom.yaml"
     custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
