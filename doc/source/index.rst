@@ -20,6 +20,7 @@ Contents
    generate_inventory
    packer
    collect_info
+   specify_hyperkube_image
 
 Search in this guide
 ~~~~~~~~~~~~~~~~~~~~

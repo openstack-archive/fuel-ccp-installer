@@ -74,3 +74,8 @@ Run script:
 ::
 
     bash ~/deploy-k8s.sh
+
+.. note::
+
+   See :ref:`specify-hyperkube-image` if you want to specify the location
+   and version of the ``hyperkube`` image to use.
