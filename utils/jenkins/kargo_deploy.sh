@@ -114,6 +114,7 @@ function with_ansible {
     local tries=3
     until admin_node_command /usr/bin/ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+        -e ansible_ssh_user=${ADMIN_USER} \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
         --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT $@ \
         $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
