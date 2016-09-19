@@ -63,6 +63,6 @@ run from the `./utils/packer` dir:
       UBUNTU_MAJOR_VERSION=16.04 UBUNTU_MINOR_VERSION=.1 UBUNTU_TYPE=server \
       ARCH=amd64 OSTYPE=ubuntu TYPE=virtualbox ATLAS_USER=doe ./deploy.sh
 
-The first command creates a box named `john/foobox` which has the version
-`0.1.0` and the libvirt provider. The second one uses the version autoincrement
-and puts the box as `john/ubuntu-16.04.1-server-amd64` and virtualbox provider.
+The first command creates a box named ``john/foobox`` which has the version
+``0.1.0`` and the libvirt provider. The second one uses the version autoincrement
+and puts the box as ``john/ubuntu-16.04.1-server-amd64`` and virtualbox provider.
