@@ -18,12 +18,19 @@ test_networking() {
     fi
 
     SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownhostsFile=/dev/null"
-    if type kubectl; then
-        kubedns_ip=$(kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
-        dnsmasq_ip=$(kubectl get svc --namespace kube-system dnsmasq --template={{.spec.clusterIP}})
-    else
-        kubedns_ip=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
-        dnsmasq_ip=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system dnsmasq --template={{.spec.clusterIP}})
+    if [ -z "$KUBEDNS_IP" ]; then
+        if type kubectl; then
+            KUBEDNS_IP=$(kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
+        else
+            KUBEDNS_IP=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system kubedns --template={{.spec.clusterIP}})
+        fi
+    fi
+    if [ -z "$DNSMASQ_IP" ]; then
+        if type kubectl; then
+            DNSMASQ_IP=$(kubectl get svc --namespace kube-system dnsmasq --template={{.spec.clusterIP}})
+        else
+            DNSMASQ_IP=$(ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP kubectl get svc --namespace kube-system dnsmasq --template={{.spec.clusterIP}})
+        fi
     fi
     domain="cluster.local"
 
@@ -39,14 +46,14 @@ test_networking() {
     acceptable_failures=0
     for node in "${SLAVE_IPS[@]}"; do
         # Check UDP 53 for kubedns
-        if ssh $SSH_OPTIONS $ADMIN_USER@$node nc -uzv $kubedns_ip 53 >/dev/null; then
+        if ssh $SSH_OPTIONS $ADMIN_USER@$node nc -uzv $KUBEDNS_IP 53 >/dev/null; then
             node_ip_works["${node}"]="PASSED"
         else
             node_ip_works["${node}"]="FAILED"
             (( failures++ ))
         fi
         # Check internal lookup
-        if ssh $SSH_OPTIONS $ADMIN_USER@$node nslookup $internal_test_domain $kubedns_ip >/dev/null; then
+        if ssh $SSH_OPTIONS $ADMIN_USER@$node nslookup $internal_test_domain $KUBEDNS_IP >/dev/null; then
             node_internal_dns_works["${node}"]="PASSED"
         else
             node_internal_dns_works["${node}"]="FAILED"
@@ -54,7 +61,7 @@ test_networking() {
         fi
 
         # Check external lookup
-        if ssh $SSH_OPTIONS $ADMIN_USER@$node nslookup $external_test_domain $dnsmasq_ip >/dev/null; then
+        if ssh $SSH_OPTIONS $ADMIN_USER@$node nslookup $external_test_domain $DNSMASQ_IP >/dev/null; then
             node_external_dns_works[$node]="PASSED"
         else
             node_external_dns_works[$node]="FAILED"
@@ -62,14 +69,14 @@ test_networking() {
         fi
 
         # Check UDP 53 for kubedns in container
-        if ssh $SSH_OPTIONS $ADMIN_USER@$node sudo docker run --rm busybox nslookup $external_test_domain $dnsmasq_ip >/dev/null; then
+        if ssh $SSH_OPTIONS $ADMIN_USER@$node sudo docker run --rm busybox nslookup $external_test_domain $DNSMASQ_IP >/dev/null; then
             container_dns_works[$node]="PASSED"
         else
             container_dns_works[$node]="FAILED"
             (( failures++ ))
         fi
         # Check UDP 53 for kubedns in container with host networking
-        if ssh $SSH_OPTIONS $ADMIN_USER@$node sudo docker run --net=host --rm busybox nslookup $external_test_domain $dnsmasq_ip >/dev/null; then
+        if ssh $SSH_OPTIONS $ADMIN_USER@$node sudo docker run --net=host --rm busybox nslookup $external_test_domain $DNSMASQ_IP >/dev/null; then
             container_hostnet_dns_works[$node]="PASSED"
         else
             container_hostnet_dns_works[$node]="FAILED"
