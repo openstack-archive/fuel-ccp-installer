@@ -5,6 +5,7 @@
   until: kubernetes_resolvable.rc == 0
   delay: 5
   retries: 20
+  changed_when: false
 
 - name: Copy network test script
   copy:
