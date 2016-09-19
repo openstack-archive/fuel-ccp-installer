@@ -17,6 +17,7 @@ Contents
    vagrant
    troubleshooting
    inventory_repo
+   generate_inventory
    packer
    collect_info
 

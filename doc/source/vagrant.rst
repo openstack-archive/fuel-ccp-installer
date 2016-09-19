@@ -14,3 +14,6 @@ To start with defaults, just run ``vagrant up``. To tweak defaults, see the
 
 .. note:: Make sure the default network choice doesn't conflict with existing
      host networks!
+.. note:: If you are running on Ubuntu Xenial, you may need to run the
+   following command: ``sudo sh -c 'echo 0 > /proc/sys/net/bridge/bridge-nf-call-iptables'``
+   or else container networking will be broken.

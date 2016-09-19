@@ -29,11 +29,11 @@ Vagrant
 Vagrant support is limited at this time. Try it and report bugs if you see any!
 
 Using VirtualBox
+================
 ::
 vagrant up --provider virtualbox
 
 Using Libvirt
-::
-sudo sh -c 'echo 0 > /proc/sys/net/bridge/bridge-nf-call-iptables'
-vagrant plugin --install vagrant-libvirt
-vagrant up --provider libvirt
+=============
+
+See [Vagrant libvirt guide](doc/source/vagrant.rst)
