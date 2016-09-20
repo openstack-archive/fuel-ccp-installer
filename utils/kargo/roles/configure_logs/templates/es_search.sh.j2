@@ -1,0 +1,20 @@
+#!/bin/sh
+ip="${ESIP:-$(kubectl get pods --namespace ccp --selector=app=elasticsearch  --output=jsonpath={.items..status.podIP})}"
+index="${ESIND:-_all}"
+size="${SIZE:-50}"
+format="\(.Timestamp) \(.Hostname) \(.Logger).\(.programname) \(.severity_label) \(.python_module) [\(.request_id)] -- \(.Payload)"
+search="${1:-/error|alert|trace.*|crit.*|fatal/}"
+if [ -z "${ip}" ]; then
+  echo "ES pod can't be found!"
+  exit 1
+fi
+if [ "${index}" = "_all" ]; then
+  echo "Search in _all. See 'curl -s $ip:9200/_cat/indices' for the full list of indexes available."
+  echo "Use default search pattern: ${search}"
+  echo
+fi
+
+echo "${format}" | sed -e 's/\\(.//g;s/)//g'
+curl -s -XPOST "$ip:9200/${index}/_search?&size=$size&q=${search}" |\
+  jq ".hits.hits[]._source | \"${format}\"" |\
+  sed -e 's/^"//g;s/"$//g;s/\\n//g' | sort -h

@@ -9,3 +9,9 @@
   gather_facts: no
   roles:
     - { role: configure_logs, tags: configure_logs }
+
+- hosts: kube-master[0]
+  become: true
+  gather_facts: no
+  roles:
+    - { role: configure_logs, tags: configure_logs }

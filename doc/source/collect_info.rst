@@ -41,3 +41,16 @@ In order to re-build the tarball with fresh info, run from the admin node:
 
 You can also adjust ansible forks with the ``FORKS=X`` and switch to the
 password based ansible auth with the ``ADMIN_PASSWORD=foopassword``.
+
+Using a simple ES searcher tool
+-------------------------------
+
+If you have ElasticSearch app deployed and cannot access Kibana UI, use the
+``es_searcher.sh`` script in order to filter indexed ES logs. For example:
+
+.. code:: sh
+
+      ESIND=log-2016.09.20 es_searcher.sh \
+      "req-fa56060f-100c-4eca-9d31-0b6d0f3432b7"
+
+      SIZE=500 es_searcher.sh "/.*fa56060f.*/"
