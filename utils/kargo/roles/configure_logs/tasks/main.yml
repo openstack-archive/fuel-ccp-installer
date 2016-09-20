@@ -57,3 +57,9 @@
     src: collect_logs.sh.j2
     dest: "{{ bin_dir }}/collect_logs.sh"
     mode: a+rwx
+
+- name: Configure logs | Install script for simple ES searches
+  template:
+    src: es_search.sh.j2
+    dest: "{{ bin_dir }}/es_search.sh"
+    mode: a+rwx
