@@ -1,3 +1,5 @@
+.. _inventory-and-deployment-data-management:
+
 Inventory and deployment data management
 ========================================
 
