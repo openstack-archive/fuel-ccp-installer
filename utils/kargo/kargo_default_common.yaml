@@ -15,11 +15,24 @@ kube_version: "v1.3.5"
 hyperkube_image_repo: "quay.io/coreos/hyperkube"
 hyperkube_image_tag: "v1.3.5_coreos.0"
 etcd_version: "v3.0.10"
+#Download once, then push to nodes in batches, if enabled
+download_run_once: false
 
 # Versions from kargo commit 948d1d61ff8f5e0c315577012497d7551d0b480c
 calico_version: "v0.20.0"
 calico_cni_version: "v1.3.1"
 
 # Custom (additional) DNS settings
-nameservers:
-  - 8.8.8.8
+# These go to hosts' /etc/resolv.conf, example:
+#searchdomains:
+#  - namespace.svc.cluster.local
+#nameservers:
+#  - 8.8.8.8
+
+# These go to dnsmasq upstream servers, or /etc/resolv.conf, if dnsmasq skipped
+#upstream_dns_servers:
+#  - 8.8.4.4
+
+# Skip dnsmasq setup, use kubedns directly, with a limitation of max 3 of the
+# name/upstream_dns servers in the host's /etc/resolv.conf.
+skip_dnsmasq: false
