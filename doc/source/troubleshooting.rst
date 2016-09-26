@@ -22,6 +22,14 @@ libvirt and NAT networks. More details can be found in this
 Then reporting issues, please also make sure to include details on the host
 OS type and its kernel version.
 
+DNS resolve issues
+==================
+
+See a `known configuration issue <https://bugs.launchpad.net/fuel-ccp/+bug/1627680>`_.
+The workaround is as simple as described in the bug: always define custom
+intranet DNS resolvers in the ``upstream_dns_servers`` var listed in the first
+place, followed by public internet resolvers, if any.
+
 Network check
 =============
 
