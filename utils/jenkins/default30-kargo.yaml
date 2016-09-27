@@ -47,6 +47,7 @@ template:
            stp: False
            hpet: False
            use_host_cpu: !os_env DRIVER_USE_HOST_CPU, true
+           enable_acpi: True
 
        network_pools:  # Address pools for OpenStack networks.
          private: private-pool01

@@ -67,7 +67,6 @@
         "console-keymaps-at/keymap=us ",
         "domain=localhost ",
         "hostname=localhost ",
-        "net.ifnames=0 ",
         "<enter><wait>"
       ]
     },
@@ -113,7 +112,6 @@
         "console-keymaps-at/keymap=us ",
         "domain=localhost ",
         "hostname=localhost ",
-        "net.ifnames=0 ",
         "<enter><wait>"
       ]
     }
@@ -138,7 +136,8 @@
         "scripts/debian/setup.sh",
         "scripts/vagrant.sh",
         "scripts/sshd.sh",
-        "scripts/vmtool.sh"
+        "scripts/vmtool.sh",
+        "scripts/cloud-init.sh"
       ]
     },
     {
