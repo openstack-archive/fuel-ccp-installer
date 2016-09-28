@@ -6,7 +6,7 @@ kube_apiserver_insecure_port: "8080"
 
 #Configure calico to set --nat-outgoing and --ipip pool option
 ipip: false
-#Set kubernetes version. Note that v3.0.1 has bugs
+#Set kubernetes version.
 kube_version: "v1.3.5"
 #Override hyperkube image to use CoreOS v1.3.5
 hyperkube_image_repo: "quay.io/coreos/hyperkube"
@@ -14,8 +14,8 @@ hyperkube_image_tag: "v1.3.5_coreos.0"
 #Required for hyperkube >=1.3.4. Set to false if installing old hyperkube
 use_hyperkube_cni: true
 
-# Versions from kargo commit 4fb4ac120b9433109924b17701e822dde0d39fbf
-etcd_version: "v3.0.1"
+# Versions from kargo commit 948d1d61ff8f5e0c315577012497d7551d0b480c
+etcd_version: "v3.0.6"
 calico_version: "v0.20.0"
 calico_cni_version: "v1.3.1"
 
