@@ -1,10 +1,15 @@
 ---
+- name: pick dnsmasq cluster IP
+  set_fact:
+    dnsmasq_server: >-
+      {%- if skip_dnsmasq|bool -%}{{ skydns_server }}{%- else -%}{{ dns_server }}{%- endif -%}
+
 - name: Wait for kubedns to be ready
-  shell: "nslookup kubernetes.default.svc.{{ cluster_name }} {{ dns_server }}"
+  shell: "nslookup kubernetes.default.svc.{{ dns_domain }} {{ dnsmasq_server }}"
   register: kubernetes_resolvable
   until: kubernetes_resolvable.rc == 0
   delay: 5
-  retries: 20
+  retries: 5
   changed_when: false
 
 - name: Copy network test script
@@ -19,7 +24,7 @@
   shell: "bash {{ bin_dir }}/test_networking.sh"
   environment:
     KUBEDNS_IP: "{{ skydns_server }}"
-    DNSMASQ_IP: "{{ dns_server }}"
+    DNSMASQ_IP: "{{ dnsmasq_server }}"
     ADMIN_USER: "{{ ansible_user }}"
     ADMIN_IP: "{{ hostvars[groups['kube-master'][0]]['ip'] | default(hostvars[groups['kube-master'][0]]['ansible_default_ipv4']['address']) }}"
     SLAVE_IPS: "{{ ip }}"

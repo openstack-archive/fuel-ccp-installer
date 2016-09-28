@@ -21,3 +21,20 @@ libvirt and NAT networks. More details can be found in this
 
 Then reporting issues, please also make sure to include details on the host
 OS type and its kernel version.
+
+Network check
+=============
+
+While a net check is a part of deployment process, you can run it manually
+from the admin node as well:
+
+.. code:: sh
+
+      export ws=~/workspace/
+      /usr/bin/ansible-playbook -e ansible_ssh_pass=vagrant -u vagrant -b \
+      --become-user=root -i ~/${ws}inventory/inventory.cfg \
+      -e @${ws}kargo/inventory/group_vars/all.yml \
+      -e @${ws}inventory/kargo_default_common.yaml \
+      -e @${ws}inventory/kargo_default_ubuntu.yaml \
+      -e @${ws}inventory/custom.yaml \
+      ${ws}utils/kargo/postinstall.yml -v --tags postinstall
