@@ -9,29 +9,29 @@ rack-01-node-params:
      source_image:
      format: qcow2
   interfaces:
-   - label: eth0
+   - label: ens3
      l2_network_device: public
      interface_model: virtio
-   - label: eth1
+   - label: ens4
      l2_network_device: private
      interface_model: virtio
-   - label: eth2
+   - label: ens5
      l2_network_device: storage
      interface_model: virtio
-   - label: eth3
+   - label: ens6
      l2_network_device: management
      interface_model: virtio
   network_config:
-    eth0:
+    ens3:
       networks:
        - public
-    eth1:
+    ens4:
       networks:
        - private
-    eth2:
+    ens5:
       networks:
        - storage
-    eth3:
+    ens6:
       networks:
        - management
 
@@ -73,6 +73,7 @@ groups:
        stp: True
        hpet: False
        use_host_cpu: true
+       enable_acpi: True
 
    network_pools:  # Address pools for OpenStack networks.
      # Actual names should be used for keys

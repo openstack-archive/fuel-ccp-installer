@@ -69,8 +69,6 @@
         "domain=ubuntu1604 ",
         "console-setup/ask_detect=false ",
         "keyboard-configuration/layoutcode=us ",
-        "net.ifnames=0 ",
-        "biosdevname=0 ",
         "vga=788 noprompt quiet --<enter>"
       ]
     },
@@ -120,8 +118,6 @@
         "domain=ubuntu1604 ",
         "console-setup/ask_detect=false ",
         "keyboard-configuration/layoutcode=us ",
-        "net.ifnames=0 ",
-        "biosdevname=0 ",
         "vga=788 noprompt quiet --<enter>"
       ]
     }
@@ -145,7 +141,8 @@
         "scripts/debian/setup.sh",
         "scripts/vagrant.sh",
         "scripts/sshd.sh",
-        "scripts/vmtool.sh"
+        "scripts/vmtool.sh",
+        "scripts/cloud-init.sh"
       ]
     },
     {
