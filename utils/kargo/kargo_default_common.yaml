@@ -15,8 +15,8 @@ hyperkube_image_tag: "v1.3.5_coreos.0"
 use_hyperkube_cni: true
 
 # Versions from kargo commit 4fb4ac120b9433109924b17701e822dde0d39fbf
-etcd_version: "v3.0.1"
-calico_version: "v0.20.0"
+etcd_version: "v3.0.6"
+calico_version: "v0.22.0"
 calico_cni_version: "v1.3.1"
 
 # Custom (additional) DNS settings
