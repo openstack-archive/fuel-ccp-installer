@@ -29,6 +29,12 @@ based with the following packages installed:
 .. NOTE:: You could use one of the k8s node as an admin node. In this case this
           node should meet both k8s and admin node requirements.
 
+.. NOTE:: Before to continue, configure the admin node with the commands:
+   ::
+
+       sysctl net.ipv4.ip_forward=1
+       sysctl net.bridge.bridge-nf-call-iptables=0
+
 Node access requirements
 ========================
 
