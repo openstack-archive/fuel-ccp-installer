@@ -69,6 +69,9 @@ Create deployment script:
   Otherwise, it should take the `local` value.
 - ``SLAVE_IPS`` - IPs of the k8s nodes.
 
+.. NOTE:: if the qcow2 VM image is built with predictable interface names,
+    add ``export INTERFACE_PREFIX=ens`` to the ``./deploy-k8s.sh`` file.
+
 Run script:
 
 ::

@@ -6,6 +6,9 @@ aliases:
   default_interface_model:
    - &interface_model !os_env INTERFACE_MODEL, e1000
 
+  default_interface_prefix:
+   - &interface_prefix !os_env INTERFACE_PREFIX, iface
+
 template:
   devops_settings:
     env_name: !os_env ENV_NAME
@@ -88,23 +91,23 @@ template:
 
             # List of node interfaces
             interfaces:
-             - label: iface0
+             - label: '%{interface_prefix}1'
                l2_network_device: private
                interface_model: *interface_model
-             - label: iface1
+             - label: '%{interface_prefix}2'
                l2_network_device: public
                interface_model: *interface_model
-             - label: iface2
+             - label: '%{interface_prefix}3'
                l2_network_device: neutron
                interface_model: *interface_model
             network_config:
-              iface0:
+              '%{interface_prefix}1':
                 networks:
                  - private
-              iface1:
+              '%{interface_prefix}2':
                 networks:
                  - public
-              iface2:
+              '%{interface_prefix}3':
                 networks:
                  - neutron
 
