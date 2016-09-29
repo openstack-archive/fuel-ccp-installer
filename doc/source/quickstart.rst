@@ -23,6 +23,7 @@ based with the following packages installed:
 
 * ansible (2.1.x)
 * python-netaddr
+* python-apt
 * sshpass
 * git
 
