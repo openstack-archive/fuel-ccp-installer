@@ -1,0 +1,10 @@
+---
+- name: Process apt repos
+  apt_repository:
+    filename: "{{ item['name'] }}"
+    repo: "{{ item['repo'] }}"
+    update_cache: no
+    validate_certs: "{{ item['validate_certs'] }}"
+  become: true
+  with_items: "{{ apt_repos }}"
+  notify: Preinstall | update repos

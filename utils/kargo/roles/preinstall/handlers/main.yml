@@ -2,3 +2,7 @@
 - name: Preinstall | update certs
   command: update-ca-certificates
   become: true
+
+- name: Preinstall | update repos
+  command: apt-get -y update
+  become: true

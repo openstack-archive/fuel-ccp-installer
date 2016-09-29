@@ -11,3 +11,9 @@ trust_self_signed_certs: false
 #      -----END CERTIFICATE-----
 #  - name: bar
 #    pem...
+
+# Apt repos to add
+#apt_repos:
+#  - name: foo
+#    repo: 'deb foodeb'
+#    validate_certs: yes

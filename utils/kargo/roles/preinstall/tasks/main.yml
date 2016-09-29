@@ -55,3 +55,6 @@
     owner: root
     group: root
     mode: 0644
+
+- include: process_repos.yml
+  when: "{{ apt_repos is defined and apt_repos[0] is defined}}"
