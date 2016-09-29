@@ -5,7 +5,7 @@ Kubernetes deployment guide
 This guide provides a step by step instruction of how to deploy k8s cluster on
 bare metal or a virtual machine.
 
-k8s node requirements
+K8s node requirements
 =====================
 
 The recommended deployment target requirements:
@@ -14,6 +14,16 @@ The recommended deployment target requirements:
 - At least 8Gb of RAM per node
 - At least 20Gb of disk space on each node.
 
+Configure BM nodes (or the host running VMs) with the commands:
+::
+
+    sysctl net.ipv4.ip_forward=1
+    sysctl net.bridge.bridge-nf-call-iptables=0
+
+.. NOTE:: If you deploy on Ubuntu Trusty BM nodes or host running your VM
+    nodes, make sure you have at least Kernel version 3.19.0-15 installed
+    and ``modprobe br_netfilter`` enabled. Lucky you, if your provisioning
+    underlay took care for that!
 
 Admin node requirements
 =======================
@@ -25,9 +35,6 @@ based with the following packages installed:
 * python-netaddr
 * sshpass
 * git
-
-.. NOTE:: You could use one of the k8s node as an admin node. In this case this
-          node should meet both k8s and admin node requirements.
 
 Node access requirements
 ========================
@@ -68,6 +75,10 @@ Create deployment script:
   refers to a remote node, like a VM, it should take an IP address.
   Otherwise, it should take the `local` value.
 - ``SLAVE_IPS`` - IPs of the k8s nodes.
+
+.. NOTE:: If you deploy on Ubuntu Trusty BM nodes or host running your VM
+    nodes, make sure to add ``export CUSTOM_YAML='ipip: true'`` to the
+    ``./deploy-k8s.sh`` file.
 
 Run script:
 
