@@ -7,13 +7,13 @@ kube_apiserver_insecure_port: "8080"
 #Configure calico to set --nat-outgoing and --ipip pool option
 ipip: false
 #Set kubernetes version.
-kube_version: "v1.3.5"
+kube_version: "v1.4.0"
 
 #Overridden component versions (different from Kargo upstream)
 
-#use CoreOS hyperkube v1.3.5
+#Use CoreOS hyperkube v1.4.0
 hyperkube_image_repo: "quay.io/coreos/hyperkube"
-hyperkube_image_tag: "v1.3.5_coreos.0"
+hyperkube_image_tag: "v1.4.0_coreos.1"
 etcd_version: "v3.0.10"
 #Download once, then push to nodes in batches, if enabled
 download_run_once: true
