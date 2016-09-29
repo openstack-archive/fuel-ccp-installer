@@ -60,11 +60,12 @@ Vagrant.configure("2") do |config|
         # when all the machines are up and ready.
         ip = "#{$private_subnet}.#{$kargo_node_index+10}"
         vars = {
-          "KARGO_REPO"   => $kargo_repo,
-          "KARGO_COMMIT" => $kargo_commit,
-          "SLAVE_IPS"    => "\"#{node_ips.join(' ')}\"",
-          "ADMIN_IP"     => "local",
-          "IMAGE_PATH"   => $box.sub('/','_'),
+          "KARGO_REPO"       => $kargo_repo,
+          "KARGO_COMMIT"     => $kargo_commit,
+          "SLAVE_IPS"        => "\"#{node_ips.join(' ')}\"",
+          "ADMIN_IP"         => "local",
+          "IMAGE_PATH"       => $box.sub('/','_'),
+          "INTERFACE_PREFIX" => "ens",
         }
         env = []
         vars.each { |k, v| env << "#{k}=#{v}" }
