@@ -2,4 +2,8 @@
 - hosts: k8s-cluster
   roles:
     - { role: postinstall, tags: postinstall }
+    - { role: netcheck/ipip, tags: netcheck }
 
+- hosts: kube-master
+  roles:
+    - { role: netcheck, tags: netcheck }
