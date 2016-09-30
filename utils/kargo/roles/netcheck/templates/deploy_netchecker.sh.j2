@@ -1,0 +1,126 @@
+#!/bin/bash
+
+set -e
+
+if [ -n "$1" ] ; then
+  NS="--namespace=$1"
+fi
+
+# check there are nodes in the cluster
+kubectl get nodes
+
+echo "Installing netchecker server"
+echo '
+apiVersion: v1
+kind: Pod
+metadata:
+  name: netchecker-server
+  labels:
+    app: netchecker-server
+spec:
+  containers:
+    - name: netchecker-server
+      image: "{{ server_img }}"
+      env:
+      imagePullPolicy: Always
+      ports:
+        - containerPort: 8081
+          hostPort: 8081
+    - name: kubectl-proxy
+      image: "{{ kubectl_image }}"
+      imagePullPolicy: Always
+      args:
+        - proxy
+'> {{ kube_config_dir }}/netchecker-server-pod.yml
+
+echo '
+apiVersion: v1
+kind: "Service"
+metadata:
+  name: netchecker-service
+spec:
+  selector:
+    app: netchecker-server
+  ports:
+    -
+      protocol: TCP
+      port: 8081
+      targetPort: 8081
+      nodePort: {{ netchecker_port }}
+  type: NodePort
+'> {{ kube_config_dir }}/netchecker-server-svc.yml
+
+echo '
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: netchecker-agent-hostnet
+  name: netchecker-agent
+spec:
+  template:
+    metadata:
+      name: netchecker-agent
+      labels:
+        app: netchecker-agent
+    spec:
+      containers:
+        - name: netchecker-agent
+          image: "{{ agent_img }}"
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          imagePullPolicy: Always
+      nodeSelector:
+        netchecker: agent
+'> {{ kube_config_dir }}/netchecker-agent-ds.yml
+
+echo '
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: netchecker-agent-hostnet
+  name: netchecker-agent-hostnet
+spec:
+  template:
+    metadata:
+      name: netchecker-agent-hostnet
+      labels:
+        app: netchecker-agent-hostnet
+    spec:
+      hostNetwork: True
+      containers:
+        - name: netchecker-agent
+          image: "{{ agent_img }}"
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          imagePullPolicy: Always
+      nodeSelector:
+        netchecker: agent
+'> {{ kube_config_dir }}/netchecker-agent-hostnet-ds.yml
+
+kubectl delete --grace-period=1 -f {{ kube_config_dir }}/netchecker-agent-ds.yml $NS || true
+kubectl delete --grace-period=1 -f {{ kube_config_dir }}/netchecker-agent-hostnet-ds.yml $NS || true
+kubectl delete --grace-period=1 -f {{ kube_config_dir }}/netchecker-server-svc.yml $NS || true
+(kubectl delete --grace-period=1 -f {{ kube_config_dir }}/netchecker-server-pod.yml $NS && sleep 10) || true
+
+kubectl create -f {{ kube_config_dir }}/netchecker-server-pod.yml $NS
+kubectl create -f {{ kube_config_dir }}/netchecker-server-svc.yml $NS
+kubectl create -f {{ kube_config_dir }}/netchecker-agent-ds.yml $NS
+kubectl create -f {{ kube_config_dir }}/netchecker-agent-hostnet-ds.yml $NS
+
+echo "Installing netchecker agents"
+kubectl get nodes | awk '/\ Ready/ {print $1}' | xargs -I {} kubectl label nodes {} netchecker=agent || true
+
+echo "DONE"
+echo "use the following commands to "
+echo "- check agents responses:"
+echo "curl -s -X GET 'http://localhost:{{ netchecker_port }}/api/v1/agents/' | python -mjson.tool"
+echo "- check connectivity with agents:"
+echo "curl -X GET 'http://localhost:{{ netchecker_port }}/api/v1/connectivity_check'"
