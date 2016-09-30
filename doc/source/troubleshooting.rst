@@ -33,8 +33,9 @@ place, followed by public internet resolvers, if any.
 Network check
 =============
 
-While a net check is a part of deployment process, you can run it manually
-from the admin node as well:
+While a net check is a part of deployment process, you can run the basic DNS
+check manually from a cluster node as ``bash /usr/local/bin/test_networking.sh``.
+You can as well run all network checks from the admin node:
 
 .. code:: sh
 
@@ -45,4 +46,15 @@ from the admin node as well:
       -e @${ws}inventory/kargo_default_common.yaml \
       -e @${ws}inventory/kargo_default_ubuntu.yaml \
       -e @${ws}inventory/custom.yaml \
-      ${ws}utils/kargo/postinstall.yml -v --tags postinstall
+      ${ws}utils/kargo/postinstall.yml -v --tags netcheck
+
+There is also K8s netcheck server and agents applications running.
+In order to verify networking health and status of agents, which include
+timestamps of the last known healthy networking state, those may be quieried
+from cluster nodes with:
+
+.. code:: sh
+
+      curl -s -X GET 'http://localhost:31081/api/v1/agents/' | \
+      python -mjson.tool
+      curl -X GET 'http://localhost:31081/api/v1/connectivity_check'

@@ -1,0 +1,5 @@
+---
+netchecker_port: 31081
+agent_img: "l23network/mcp-netchecker-agent"
+server_img: "bogdando/k8s-mcp-netcheker"
+kubectl_image: "gcr.io/google_containers/kubectl:v0.18.0-120-gaeb4ac55ad12b1-dirty"
