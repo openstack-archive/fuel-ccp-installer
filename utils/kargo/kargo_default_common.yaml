@@ -20,6 +20,8 @@ hyperkube_image_tag: "v1.4.3_coreos.0"
 etcd_version: "v3.0.12"
 #Download once, then push to nodes in batches, if enabled
 download_run_once: true
+#Enable netchecker app
+deploy_netchecker: true
 
 calico_version: "v1.0.0-beta"
 
