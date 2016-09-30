@@ -31,6 +31,8 @@
   changed_when: false
   become: no
 
+- include: 040_check-network-adv.yml
+
 - name: Copy dashboard definition
   copy:
     src: kubernetes-dashboard.yml
