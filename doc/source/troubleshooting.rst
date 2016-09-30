@@ -46,3 +46,14 @@ from the admin node as well:
       -e @${ws}inventory/kargo_default_ubuntu.yaml \
       -e @${ws}inventory/custom.yaml \
       ${ws}utils/kargo/postinstall.yml -v --tags postinstall
+
+There is also K8s netcheck server and agents applications running.
+In order to verify networking health and status of agents, which include
+timestamps of the last known healthy networking state, those may be quieried
+from cluster nodes with:
+
+.. code:: sh
+
+      curl -s -X GET 'http://localhost:31081/api/v1/agents/' | \
+      python -mjson.tool
+      curl -X GET 'http://localhost:31081/api/v1/connectivity_check'

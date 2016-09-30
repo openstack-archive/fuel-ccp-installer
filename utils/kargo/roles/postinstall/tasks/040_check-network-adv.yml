@@ -1,0 +1,43 @@
+---
+- hosts: all
+  tasks:
+
+    - name: Test tunl0 routes
+      shell: "! ip ro | grep '/26 via' | grep -v tunl0"
+      when: ipip|default(false)
+
+- hosts: kube-master
+  tasks:
+
+    - name: Get services
+      shell: kubectl get svc --namespace=default
+      register: get_svc
+      run_once: true
+
+    - name: Deploy netchecker
+      shell: "curl -s https://raw.githubusercontent.com/bogdando/netchecker-server/dev/utils/deploy_netchecker.sh | bash"
+      run_once: true
+      when: get_svc.stdout.find('netchecker-service') == -1
+
+    - name: Wait for netchecker server
+      shell: "kubectl get pods | grep ^netchecker-server"
+      run_once: true
+      register: nc_svc
+      until: nc_svc.stdout.find('Running') != -1
+      retries: 12
+      delay: 10
+
+    - name: Sleep for 10 seconds
+      pause: seconds=10
+
+    - name: Wait for netchecker agents to report
+      uri: url=http://localhost:31081/api/v1/agents/ return_content=yes
+      run_once: true
+      register: agents
+      until: "{{ (agents.content|from_json|length) }} >= {{ groups['all']|length * 2 }}"
+      retries: 13
+      delay: 5
+
+    - name: Check netchecker status
+      uri: url=http://localhost:31081/api/v1/connectivity_check status_code=204
+      run_once: true
