@@ -1,0 +1,7 @@
+---
+kube_config_dir: /etc/kubernetes
+netchecker_port: 31081
+agent_report_interval: 30
+agent_img: "quay.io/l23network/mcp-netchecker-agent:v0.1"
+server_img: "quay.io/l23network/mcp-netchecker-server:v0.1"
+kubectl_image: "gcr.io/google_containers/kubectl:v0.18.0-120-gaeb4ac55ad12b1-dirty"
