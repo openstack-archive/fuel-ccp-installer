@@ -1,0 +1,54 @@
+---
+- name: Get services
+  shell: "{{ bin_dir }}/kubectl get svc --namespace=default"
+  register: get_svc
+  run_once: true
+
+- name: Get netchecker installer
+  template:
+    src: deploy_netchecker.sh.j2
+    dest: "{{ bin_dir }}/deploy_netchecker.sh"
+    mode: "a+rx"
+  run_once: true
+  become: true
+
+- name: Deploy netchecker
+  command: "{{ bin_dir }}/deploy_netchecker.sh"
+  run_once: true
+  become: true
+  when: get_svc.stdout.find('netchecker-service') == -1
+
+- name: Wait for netchecker server
+  shell: "{{ bin_dir }}/kubectl get pods | grep ^netchecker-server"
+  run_once: true
+  register: ncs_pod
+  until: ncs_pod.stdout.find('Running') != -1
+  retries: 120
+  delay: 10
+
+- name: Wait for netchecker agents
+  shell: "{{ bin_dir }}/kubectl get pods | grep '^netchecker-agent-.*Running'"
+  run_once: true
+  register: nca_pod
+  until: "{{ nca_pod.stdout_lines|length }} >= {{ groups['all']|length * 2 }}"
+  retries: 120
+  delay: 10
+
+- name: Sleep for 10 seconds
+  pause: seconds=10
+  when: get_svc.stdout.find('netchecker-service') == -1
+
+- name: Get netchecker agents
+  uri: url=http://localhost:31081/api/v1/agents/ return_content=yes
+  run_once: true
+  register: agents
+
+- name: Give some time to netchecker agents to report
+  pause: seconds=30
+  when: "{{ (agents.content|from_json|length) }} < {{ groups['all']|length * 2 }}"
+
+- name: Check netchecker status
+  uri: url=http://localhost:31081/api/v1/connectivity_check status_code=200
+  run_once: true
+  retries: 6
+  delay: 20
