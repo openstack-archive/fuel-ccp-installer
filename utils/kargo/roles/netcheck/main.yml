@@ -1,0 +1,87 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Test tunl0 routes
+      shell: "! ip ro | grep '/26 via' | grep -v tunl0"
+      when: ipip|default(false)
+
+- hosts: kube-master
+  vars:
+    netchecker_port: 31081
+    apps_path: "/etc/kubernetes"
+    agent_img: "l23network/mcp-netchecker-agent"
+    server_img: "bogdando/k8s-mcp-netcheker"
+    kubectl_image: "gcr.io/google_containers/kubectl:v0.18.0-120-gaeb4ac55ad12b1-dirty"
+
+  tasks:
+    - name: pick dnsmasq cluster IP
+      set_fact:
+      dnsmasq_server: >-
+        {%- if skip_dnsmasq|bool -%}{{ skydns_server }}{%- else -%}{{ dns_server }}{%- endif -%}
+
+    - name: Wait for kubedns to be ready
+      shell: "nslookup kubernetes.default.svc.{{ dns_domain }} {{ dnsmasq_server }}"
+      register: kubernetes_resolvable
+      until: kubernetes_resolvable.rc == 0
+      delay: 5
+      retries: 5
+      changed_when: false
+
+    - name: Copy network test script
+      copy:
+        src: test_networking.sh
+        dest: "{{ bin_dir }}/test_networking.sh"
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Test networking connectivity
+      shell: "bash {{ bin_dir }}/test_networking.sh"
+      environment:
+        KUBEDNS_IP: "{{ skydns_server }}"
+        DNSMASQ_IP: "{{ dnsmasq_server }}"
+        ADMIN_USER: "{{ ansible_user }}"
+        ADMIN_IP: "{{ hostvars[groups['kube-master'][0]]['ip'] | default(hostvars[groups['kube-master'][0]]['ansible_default_ipv4']['address']) }}"
+        SLAVE_IPS: "{{ ip }}"
+      changed_when: false
+			become: no
+
+    - name: Get services
+      shell: kubectl get svc --namespace=default
+      register: get_svc
+      run_once: true
+
+    - name: Get netchecker installer
+      template:
+        src: deploy_netchecker.sh.j2
+        dest: "{{ bin_dir }}/deploy_netchecker.sh"
+        mode: "a+rx"
+      run_once: true
+
+    - name: Deploy netchecker
+      command: "bash {{ bin_dir }}/deploy_netchecker.sh"
+      run_once: true
+      when: get_svc.stdout.find('netchecker-service') == -1
+
+    - name: Wait for netchecker server
+      shell: "kubectl get pods | grep ^netchecker-server"
+      run_once: true
+      register: nc_svc
+      until: nc_svc.stdout.find('Running') != -1
+      retries: 12
+      delay: 10
+
+    - name: Sleep for 10 seconds
+      pause: seconds=10
+
+    - name: Wait for netchecker agents to report
+      uri: url=http://localhost:{{ netchecker_port }}/api/v1/agents/ return_content=yes
+      run_once: true
+      register: agents
+      until: "{{ (agents.content|from_json|length) }} >= {{ groups['all']|length * 2 }}"
+      retries: 13
+      delay: 5
+
+    - name: Check netchecker status
+      uri: url=http://localhost:{{ netchecker_port }}/api/v1/connectivity_check status_code=204
+      run_once: true
