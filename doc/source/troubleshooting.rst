@@ -33,16 +33,29 @@ place, followed by public internet resolvers, if any.
 Network check
 =============
 
-While a net check is a part of deployment process, you can run it manually
-from the admin node as well:
+While a net check is a part of deployment process, you can run the basic DNS
+check manually from a cluster node as ``bash /usr/local/bin/test_networking.sh``.
+You can as well run all network checks from the admin node:
 
 .. code:: sh
 
-      export ws=~/workspace/
+      export ws=/home/workspace/
       /usr/bin/ansible-playbook -e ansible_ssh_pass=vagrant -u vagrant -b \
-      --become-user=root -i ~/${ws}inventory/inventory.cfg \
+      --become-user=root -i ~${ws}inventory/inventory.cfg \
       -e @${ws}kargo/inventory/group_vars/all.yml \
       -e @${ws}inventory/kargo_default_common.yaml \
       -e @${ws}inventory/kargo_default_ubuntu.yaml \
       -e @${ws}inventory/custom.yaml \
-      ${ws}utils/kargo/postinstall.yml -v --tags postinstall
+      ${ws}utils/kargo/postinstall.yml -v --tags netcheck
+
+There is also K8s netcheck server and agents applications running, if the
+cluster was created with the ``deploy_netchecker: true``.
+In order to verify networking health and status of agents, which include
+timestamps of the last known healthy networking state, those may be quieried
+from any cluster node with:
+
+.. code:: sh
+
+      curl -s -X GET 'http://localhost:31081/api/v1/agents/' | \
+      python -mjson.tool
+      curl -X GET 'http://localhost:31081/api/v1/connectivity_check'
