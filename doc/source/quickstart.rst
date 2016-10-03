@@ -24,7 +24,7 @@ Configure BM nodes (or the host running VMs) with the commands:
     nodes, make sure you have at least Kernel version 3.19.0-15 installed
     and ``modprobe br_netfilter`` enabled. Lucky you, if your provisioning
     underlay took care for that! Otherwise you may want to
-    <persist `http://manpages.ubuntu.com/manpages/xenial/en/man5/sysctl.d.5.html`>_
+    `persist <http://manpages.ubuntu.com/manpages/xenial/en/man5/sysctl.d.5.html>`_
     that configuration change manually.
 
 Admin node requirements
