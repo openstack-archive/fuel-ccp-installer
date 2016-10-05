@@ -45,16 +45,16 @@ $ sudo apt-get install python-dev python-pip gcc libssl-dev libffi-dev
 $ pip install kargo
 $ kargo --noclone -i inventory.cfg prepare \
   --nodes \
-    node1[ansible_ssh_host=10.90.0.2,ip=10.90.0.2] \
-    node2[ansible_ssh_host=10.90.0.3,ip=10.90.0.3] \
-    node3[ansible_ssh_host=10.90.0.4,ip=10.90.0.4] \
+    node1[ansible_host=10.90.0.2,ip=10.90.0.2] \
+    node2[ansible_host=10.90.0.3,ip=10.90.0.3] \
+    node3[ansible_host=10.90.0.4,ip=10.90.0.4] \
   --etcds \
-    node4[ansible_ssh_host=10.90.0.5,ip=10.90.0.5] \
-    node5[ansible_ssh_host=10.90.0.6,ip=10.90.0.6] \
-    node6[ansible_ssh_host=10.90.0.7,ip=10.90.0.7] \
+    node4[ansible_host=10.90.0.5,ip=10.90.0.5] \
+    node5[ansible_host=10.90.0.6,ip=10.90.0.6] \
+    node6[ansible_host=10.90.0.7,ip=10.90.0.7] \
   --masters \
-    node7[ansible_ssh_host=10.90.0.5,ip=10.90.0.8] \
-    node8[ansible_ssh_host=10.90.0.6,ip=10.90.0.9]
+    node7[ansible_host=10.90.0.5,ip=10.90.0.8] \
+    node8[ansible_host=10.90.0.6,ip=10.90.0.9]
 
 This allows more granular control over role distribution, but kargo-cli has
 several dependencies because it several other functions.
