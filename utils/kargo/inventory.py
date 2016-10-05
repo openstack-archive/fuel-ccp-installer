@@ -127,7 +127,7 @@ class KargoInventory(object):
 
                 next_host = "{0}{1}".format(HOST_PREFIX, next_host_id)
                 next_host_id += 1
-                all_hosts[next_host] = "ansible_ssh_host={0} ip={1}".format(
+                all_hosts[next_host] = "ansible_host={0} ip={1}".format(
                     host, host)
             elif host[0].isalpha():
                 raise Exception("Adding hosts by hostname is not supported.")
