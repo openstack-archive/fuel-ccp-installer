@@ -17,7 +17,7 @@ calico_cni_ipam_checksum: "09d076b15b791956efee91646e47fdfdcf382db16082cef4f542a
 kube_version: "v1.4.0"
 hyperkube_image_repo: "quay.io/coreos/hyperkube"
 hyperkube_image_tag: "v1.4.0_coreos.1"
-etcd_version: "v3.0.10"
+etcd_version: "v3.0.12"
 #Download once, then push to nodes in batches, if enabled
 download_run_once: true
 
