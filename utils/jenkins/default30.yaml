@@ -20,8 +20,7 @@ template:
             gateway: +1
             l2_network_device: +1  # l2_network_device will get this IP address
           ip_ranges:
-            dhcp: [+128, -32]
-            rack-01: [+2, +127]
+            dhcp: [+2, -2]
 
       storage-pool01:
         net: *pool_default
