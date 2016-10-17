@@ -2,6 +2,7 @@ aliases:
 
   dynamic_address_pool:
    - &pool_default !os_env POOL_DEFAULT, 10.90.0.0/16:24
+   - &pool_neutron_ext !os_env POOL_NEUTRON_EXT 10.95.0.0/16:24
 
   default_interface_model:
    - &interface_model !os_env INTERFACE_MODEL, e1000
@@ -25,8 +26,16 @@ template:
 
       public-pool01:
         net: *pool_default
+
       neutron-pool01:
-        net: *pool_default
+        net: *pool_neutron_ext
+        params:
+          vlan_start: 1310
+          ip_reserved:
+            gateway: +1
+            l2_network_device: +1
+          ip_ranges:
+            dhcp: [+2, -2]
 
     groups:
      - name: default
@@ -64,7 +73,9 @@ template:
 
          neutron:
            address_pool: neutron-pool01
-           dhcp: false
+           dhcp: true
+           forward:
+             mode: nat
 
        nodes:
         - name: slave-0
