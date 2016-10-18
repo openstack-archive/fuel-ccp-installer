@@ -2,7 +2,7 @@ aliases:
 
   dynamic_address_pool:
    - &pool_default !os_env POOL_DEFAULT, 10.90.0.0/16:24
-   - &pool_neutron_ext !os_env POOL_NEUTRON_EXT 10.95.0.0/16:24
+   - &pool_neutron_ext !os_env POOL_NEUTRON_EXT, 10.95.0.0/16:24
 
   default_interface_model:
    - &interface_model !os_env INTERFACE_MODEL, e1000
