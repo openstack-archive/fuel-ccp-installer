@@ -1,5 +1,6 @@
 ---
 - hosts: k8s-cluster
+  serial: 100
   roles:
     - { role: postinstall, tags: postinstall }
 
