@@ -286,8 +286,10 @@ fi
 # Calculate parallel ansible execution
 if [[ "${#SLAVE_IPS[@]}" -lt 50 ]]; then
     ANSIBLE_FORKS="${#SLAVE_IPS[@]}"
+    KARGO_CLUSTER_YML="cluster.yml"
 else
     ANSIBLE_FORKS=50
+    KARGO_CLUSTER_YML="scale-cluster.yml"
 fi
 
 # Stop trapping pre-setup tasks
@@ -297,14 +299,14 @@ echo "Running pre-setup steps on nodes via ansible..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml -e "ansible_ssh_pass=${ADMIN_PASSWORD}"
 
 echo "Running kargo preinstall early via ansible..."
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall
+with_ansible $ADMIN_WORKSPACE/kargo/$KARGO_CLUSTER_YML --tags preinstall
 
 echo "Configuring DNS settings on nodes via ansible..."
 # FIXME(bogdando) a hack to w/a https://github.com/kubespray/kargo/issues/452
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e inventory_hostname=skip_k8s_part
+with_ansible $ADMIN_WORKSPACE/kargo/$KARGO_CLUSTER_YML  --tags dnsmasq -e inventory_hostname=skip_k8s_part
 
 echo "Deploying k8s via ansible..."
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
+with_ansible $ADMIN_WORKSPACE/kargo/$KARGO_CLUSTER_YML 
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
