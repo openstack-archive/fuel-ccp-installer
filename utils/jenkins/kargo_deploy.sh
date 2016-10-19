@@ -182,6 +182,9 @@ if [[ "$ADMIN_IP" != "local" ]]; then
 else
     ADMIN_WORKSPACE="$WORKSPACE"
 fi
+if [[ "$ADMIN_NODE_CLEANUP" ]]; then
+    admin_node_command rm -rf $ADMIN_WORKSPACE || true
+fi
 admin_node_command mkdir -p $ADMIN_WORKSPACE/utils/kargo
 tar cz ${BASH_SOURCE%/*}/../kargo | admin_node_command tar xzf - -C $ADMIN_WORKSPACE/utils/
 
