@@ -81,6 +81,9 @@ Create deployment script:
   Otherwise, it should take the `local` value.
 - ``SLAVE_IPS`` - IPs of the k8s nodes.
 
+.. NOTE:: You can also use ``./utils/jenkins/deploy_k8s_cluster_example.sh``
+    as a starting point.
+
 .. NOTE:: If you deploy using libvirt with Ubuntu Trusty as a bare metal
     hypervisor or deploy on AWS, GCE, or OpenStack, , make sure to add
     ``export CUSTOM_YAML='ipip: true'`` to the ``./deploy-k8s.sh`` file.
