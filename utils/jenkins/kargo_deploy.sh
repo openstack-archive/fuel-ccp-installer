@@ -226,6 +226,7 @@ if [ "${INVENTORY_REPO}" ]; then
     fi
 else
     echo "Generating ansible inventory on admin node..."
+    admin_node_command rm -rf $ADMIN_WORKSPACE/inventory || true
     admin_node_command mkdir -p $ADMIN_WORKSPACE/inventory
     admin_node_command git init $ADMIN_WORKSPACE/inventory
 fi
