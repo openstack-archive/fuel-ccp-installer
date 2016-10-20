@@ -21,6 +21,7 @@ python-netaddr
 software-properties-common
 python-setuptools
 gcc
+ntp
 "
 
 echo "==> Installing packages"
