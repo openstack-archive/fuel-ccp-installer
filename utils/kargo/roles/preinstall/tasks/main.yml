@@ -47,6 +47,13 @@
     state: latest
   when: ansible_os_family == "Debian"
 
+- name: Ensure ntp is installed
+  apt:
+    name: ntp
+    state: latest
+  when: ansible_os_family == "Debian"
+
+
 # FIXME(mattymo): Opts are set too late (https://github.com/kubespray/kargo/issues/487)
 - name: Set Docker options early
   template:
