@@ -111,20 +111,30 @@ function wait_for_nodes {
 }
 
 function with_ansible {
-    local tries=3
-    until admin_node_command /usr/bin/ansible-playbook \
+    local tries=5
+    local retry_opt=""
+    playbook=$1
+    retryfile=${playbook/.yml/.retry}
+
+    until admin_node_command \
+        ANSIBLE_CONFIG=$ADMIN_WORKSPACE/utils/kargo/ansible.cfg \
+        /usr/bin/ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
         -e ansible_ssh_user=${ADMIN_USER} \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-        --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT $@ \
+        --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT \
         $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
-        $OS_SPECIFIC_DEFAULTS_OPT $custom_opts; do
+        $OS_SPECIFIC_DEFAULTS_OPT $custom_opts $@ $retry_opt; do
             if [[ $tries > 1 ]]; then
                 (( tries-- ))
                 echo "Deployment failed! Trying $tries more times..."
             else
                 collect_info
                 exit_gracefully 1
+            fi
+
+            if admin_node_command test -e "$retryfile"; then
+                retry_opt="--limit @${retryfile}"
             fi
     done
 }

@@ -5,7 +5,6 @@
     - { role: preinstall, tags: preinstall }
 
 - hosts: localhost
-  become: true
   gather_facts: no
   roles:
     - { role: configure_logs, tags: configure_logs }
