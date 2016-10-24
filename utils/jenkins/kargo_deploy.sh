@@ -306,7 +306,8 @@ fi
 if [[ "${#SLAVE_IPS[@]}" -lt 50 ]]; then
     ANSIBLE_FORKS="${#SLAVE_IPS[@]}"
 else
-    ANSIBLE_FORKS=50
+    ANSIBLE_FORKS=100
+    SCALE_DEPLOY="true"
 fi
 
 # Stop trapping pre-setup tasks
@@ -322,8 +323,16 @@ echo "Configuring DNS settings on nodes via ansible..."
 # FIXME(bogdando) a hack to w/a https://github.com/kubespray/kargo/issues/452
 with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e inventory_hostname=skip_k8s_part
 
-echo "Deploying k8s via ansible..."
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
+if [[ "$SCALE_DEPLOY == "true" ]]; then
+    echo "Deploying k8s masters/etcds first via ansible..."
+    with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --limit k8s-master:etcd
+
+    echo "Deploying k8s non-masters via ansible..."
+    with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --limit k8s-node:!k8s-master
+else
+    echo "Deploying k8s via ansible..."
+    with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
+fi
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
