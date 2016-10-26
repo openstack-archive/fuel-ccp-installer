@@ -317,12 +317,8 @@ set +e
 echo "Running pre-setup steps on nodes via ansible..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml -e "ansible_ssh_pass=${ADMIN_PASSWORD}"
 
-echo "Running kargo preinstall early via ansible..."
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall
-
-echo "Configuring DNS settings on nodes via ansible..."
-# FIXME(bogdando) a hack to w/a https://github.com/kubespray/kargo/issues/452
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e skip_dnsmasq=yes -e inventory-hostname=skip_k8s_part
+echo "Running kargo preinstall and DNS configuration early via ansible..."
+with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall,dnsmasq -e skip_dnsmasq_k8s=true
 
 echo "Deploying k8s masters/etcds first via ansible..."
 with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-master:etcd
