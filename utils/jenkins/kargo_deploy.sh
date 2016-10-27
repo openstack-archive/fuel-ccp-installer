@@ -137,7 +137,6 @@ function with_ansible {
                 retry_opt="--limit @${retryfile}"
             fi
     done
-    rm -f "$retryfile" || true
 }
 
 mkdir -p tmp logs
@@ -313,7 +312,6 @@ fi
 # Stop trapping pre-setup tasks
 set +e
 
-
 echo "Running pre-setup steps on nodes via ansible..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/preinstall.yml -e "ansible_ssh_pass=${ADMIN_PASSWORD}"
 
@@ -322,18 +320,10 @@ with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags preinstall
 
 echo "Configuring DNS settings on nodes via ansible..."
 # FIXME(bogdando) a hack to w/a https://github.com/kubespray/kargo/issues/452
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e skip_dnsmasq=yes -e inventory-hostname=skip_k8s_part
+with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --tags dnsmasq -e inventory_hostname=skip_k8s_part
 
-echo "Deploying k8s masters/etcds first via ansible..."
-with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-master:etcd
-
-# Only run non-master deployment if there are non-masters in inventory.
-if admin_node_command ansible-playbook -i $ADMIN_WORKSPACE/inventory \
-       $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-node:!kube-master:!etcd \
-       --list-hosts &>/dev/null; then
-    echo "Deploying k8s non-masters via ansible..."
-    with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-node:!kube-master:!etcd
-fi
+echo "Deploying k8s via ansible..."
+with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
