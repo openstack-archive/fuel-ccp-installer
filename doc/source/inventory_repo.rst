@@ -11,7 +11,7 @@ the admin node). Or it takes a ``workspace``, when the ``$ADMIN_IP`` refers to
 not a ``local`` admin node. For example, if it is a VM.
 
 Installer passes that data and inventory to
-`Kargo <https://github.com/kubespray/kargo>`_ ansible installer.
+`Kargo <https://github.com/kubernetes-incubator/kargo>`_ ansible installer.
 
 For each inventory repo commit, it expects the following content of
 the repo root directory:
