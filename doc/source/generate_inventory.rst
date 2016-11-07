@@ -36,7 +36,7 @@ file. Role distribution is as follows:
 Using Kargo-cli
 ---------------
 
-You can use `Kargo-cli <https://github.com/kubespray/kargo-cli>` tool to
+You can use `Kargo-cli <https://github.com/kubernetes-incubator/kargo-cli>` tool to
 generate Ansible inventory with some more complicated role distribution. Below
 is an example you can use (indented for visual effect):
 

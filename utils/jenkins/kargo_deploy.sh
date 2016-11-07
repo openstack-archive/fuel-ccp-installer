@@ -25,7 +25,7 @@ SSH_OPTIONS="-A -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 SSH_OPTIONS_COPYID="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 VM_LABEL=${BUILD_TAG:-unknown}
 
-KARGO_REPO=${KARGO_REPO:-https://github.com/kubespray/kargo.git}
+KARGO_REPO=${KARGO_REPO:-https://github.com/kubernetes-incubator/kargo.git}
 KARGO_COMMIT=${KARGO_COMMIT:-origin/master}
 
 # Default deployment settings
