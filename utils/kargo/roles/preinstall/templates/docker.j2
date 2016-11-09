@@ -1,6 +1,2 @@
 # Deployed by Ansible
-{% if kube_network_plugin == "flannel" %}
-DOCKER_OPTS="--bip={{ flannel_subnet }} --mtu={{ flannel_mtu }} {% if docker_options is defined %}{{ docker_options }}{% endif %}"
-{% else %}
 DOCKER_OPTS="{% if docker_options is defined %}{{ docker_options }}{% endif %}"
-{% endif %}
