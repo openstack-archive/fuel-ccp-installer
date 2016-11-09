@@ -23,8 +23,6 @@ download_run_once: true
 
 calico_version: "v1.0.0-beta"
 
-#Pin calicoctl back to v0.22.0 because syntax changes in v1.0.0-beta
-calicoctl_image_tag: "v0.22.0"
 #Force calico CNI binaries to overwrite the ones copied from
 #hyperkube while leaving other cni plugins intact
 #overwrite_hyperkube_cni: true
