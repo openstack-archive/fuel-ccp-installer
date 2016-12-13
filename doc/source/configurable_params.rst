@@ -37,7 +37,8 @@ Common vars that are used in Kargo
 
 * **calico_version** - Specify version of Calico to use
 * **calico_cni_version** - Specify version of Calico CNI plugin to use
-* **docker_version** - Specify version of Docker to use (must be unquoted)
+* **docker_version** - Specify version of Docker to used (should be quoted
+  string)
 * **etcd_version** - Specify version of ETCD to use
 * **ipip** - Enables Calico ipip encapsulation by default
 * **hyperkube_image_repo** - Specify the Docker repository where Hyperkube
