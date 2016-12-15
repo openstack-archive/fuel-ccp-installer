@@ -1,0 +1,4 @@
+---
+- hosts: extip-node
+  roles:
+    - { role: externalip }
