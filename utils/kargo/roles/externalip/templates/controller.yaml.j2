@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: {{ extip_ctrl_app_kind }}
+metadata:
+  name: {{ extip_ctrl_app }}
+spec:
+{% if extip_ctrl_app_kind != "DaemonSet" %}
+  replicas: {{ extip_ctrl_replicas }}
+{% endif %}
+  template:
+    metadata:
+      labels:
+        app: {{ extip_ctrl_label }}
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        {{ extip_node_label }}: "true"
+      containers:
+      - name: externalipcontroller
+        image: {{ extip_image_repo }}:{{ extip_image_tag }}
+        imagePullPolicy: {{ extip_ctrl_image_pull_policy }}
+        securityContext:
+          privileged: true
+        command:
+          - ipmanager
+          - claimcontroller
+          - --iface={{ extip_iface }}
+          - --logtostderr
+          - --v={{ extip_ctrl_verbose }}
+          - --hb={{ extip_ctrl_hb }}
+          - --hostname={% if extip_distribution == "all" %}ecmp{% else %}{{ extip_ctrl_hostname }}
+{% endif %}
