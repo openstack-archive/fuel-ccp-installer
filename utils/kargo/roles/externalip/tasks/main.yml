@@ -1,0 +1,24 @@
+---
+#- name: ExtIP Controller |
+#  run_once: true
+
+- name: ExtIP Controller | Get pods
+  shell: "kubectl get pods -o wide"
+  run_once: true
+  register: pods
+
+- name: ExtIP Controller | Upload claimcontroller config
+  template: src=controller.yaml.j2 dest=/etc/kubernetes/extip_controller.yml
+
+- name: ExtIP Controller | Upload claimscheduler config
+  template: src=scheduler.yaml.j2 dest=/etc/kubernetes/extip_scheduler.yml
+
+- name: ExtIP Controller | Create claimcontroller
+  run_once: true
+  shell: "kubectl create -f /etc/kubernetes/extip_controller.yml"
+  when: pods.stdout.find("^{{ extip_ctrl_app }}-") != -1
+
+- name: ExtIP Controller | Create claimscheduler
+  run_once: true
+  shell: "kubectl create -f /etc/kubernetes/extip_scheduler.yml"
+  when: pods.stdout.find("^{{ extip_sched_app }}-") != -1
