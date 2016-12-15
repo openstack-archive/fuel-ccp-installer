@@ -1,0 +1,65 @@
+---
+- name: ExtIP Controller | Get pods
+  shell: "kubectl get pods -o wide"
+  run_once: true
+  register: pods
+  delegate_to: "{{groups['kube-master'][0]}}"
+
+- name: ExtIP Controller | Get list of nodes with labels
+  shell: "kubectl get node --show-labels"
+  run_once: true
+  register: k8s_nodes
+  delegate_to: "{{groups['kube-master'][0]}}"
+
+- name: ExtIP Controller | Get list of nodes with IPs
+  shell: 'kubectl get nodes -o jsonpath=''{range .items[*]}{@.metadata.name}{" "}{range @.status.addresses[?(@.type == "InternalIP")]}{@.address}{"\n"}{end}{end}'''
+  register: k8s_name_cmd
+  run_once: true
+  delegate_to: "{{groups['kube-master'][0]}}"
+
+- name: ExtIP Controller | Set fact with node-ip search pattern
+  set_fact:
+    k8s_ip_pattern: ".* {{ ip }}$"
+
+- name: ExtIP Controller | Find k8s node name by IP address
+  set_fact:
+    k8s_name: "{{ (k8s_name_cmd.stdout_lines | select('match', k8s_ip_pattern) | join(',')).split(' ')[0] }}"
+
+- name: ExtIP Controller | Print k8s node names
+  debug:
+    msg: "{{ k8s_name }}"
+
+- name: ExtIP Controller | Set fact with node-label search pattern
+  set_fact:
+    k8s_label_pattern: "^{{ k8s_name }} .*[,\ ]{{ extip_node_label }}=true.*"
+
+- name: ExtIP Controller | Find matches for node by label
+  set_fact:
+    matches: "{{ k8s_nodes.stdout_lines | select('match', k8s_label_pattern) | list }}"
+
+- name: ExtIP Controller | Label node if needed
+  shell: "kubectl label nodes {{ k8s_name }} {{ extip_node_label }}=true"
+  when: "{{ (matches | length) < 1 }}"
+  delegate_to: "{{groups['kube-master'][0]}}"
+
+- name: ExtIP Controller | Upload claimcontroller config
+  run_once: true
+  template: src=controller.yaml.j2 dest=/etc/kubernetes/extip_controller.yml
+  delegate_to: "{{groups['kube-master'][0]}}"
+
+- name: ExtIP Controller | Upload claimscheduler config
+  run_once: true
+  template: src=scheduler.yaml.j2 dest=/etc/kubernetes/extip_scheduler.yml
+  delegate_to: "{{groups['kube-master'][0]}}"
+
+- name: ExtIP Controller | Create claimcontroller
+  run_once: true
+  shell: "kubectl create -f /etc/kubernetes/extip_controller.yml"
+  when: pods.stdout.find("{{ extip_ctrl_app }}-") == -1
+  delegate_to: "{{groups['kube-master'][0]}}"
+
+- name: ExtIP Controller | Create claimscheduler
+  run_once: true
+  shell: "kubectl create -f /etc/kubernetes/extip_scheduler.yml"
+  when: pods.stdout.find("{{ extip_sched_app }}-") == -1
+  delegate_to: "{{groups['kube-master'][0]}}"

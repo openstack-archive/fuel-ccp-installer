@@ -1,0 +1,4 @@
+---
+- hosts: kube-node
+  roles:
+    - { role: externalip }
