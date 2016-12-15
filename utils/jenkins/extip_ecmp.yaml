@@ -1,0 +1,6 @@
+# External IP playbook settings to provide ECMP
+extip_image_tag: "release-0.2.1"
+extip_ctrl_app_kind: "DaemonSet"
+extip_distribution: "all"
+extip_mask: 32
+extip_iface: "lo"
