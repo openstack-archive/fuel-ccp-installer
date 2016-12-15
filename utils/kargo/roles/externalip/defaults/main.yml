@@ -1,0 +1,54 @@
+---
+# All nodes will be labeled and then label will be used as "nodeSelector" for
+# external IP controller application. You can spacify this label name here.
+extip_node_label: "externalip"
+
+# Image params
+extip_image_repo: "mirantis/k8s-externalipcontroller"
+extip_image_tag: "release-0.2.1"
+
+# If multiple external IPs claim controllers are running we need to
+# define how to distribute IPs.
+# Valid values are:
+#   "balance" - IPs are balanced across controllers
+#   "single" - only one controller will hold all IPs. Not yet supported in
+#              multiple controllers mode. If you need to run on one node please
+#              use extip_ctrl_app_kind=Deployment and extip_ctrl_replicas=1
+#   "all" - all controllers will bring up all IPs (for ECMP, for example)
+extip_distribution: "balance"
+
+# External IPs network mask
+extip_mask: 24
+
+# Interface to bring external IPs on
+extip_iface: "eth0"
+
+# Kubernetes namespace for the application
+k8s_namespace: "default"
+
+#####
+# K8s controller app params
+extip_ctrl_app: "claimcontroller"
+# App kind, valid values are: "Deployment", "DaemonSet"
+extip_ctrl_app_kind: "Deployment"
+extip_ctrl_replicas: 1
+extip_ctrl_label: "externalipcontroller"
+extip_ctrl_image_pull_policy: "IfNotPresent"
+# Verbosity
+extip_ctrl_verbose: 5
+# Heartbeat
+extip_ctrl_hb: "500ms"
+extip_ctrl_hostname: "{{ ansible_hostname }}"
+
+#####
+# K8s scheduler app params
+extip_sched_app: "claimscheduler"
+extip_sched_label: "claimscheduler"
+extip_sched_image_pull_policy: "IfNotPresent"
+extip_sched_replicas: 2
+# Verbosity
+extip_sched_verbose: 5
+# Scheduler leader elect, string ("true" or "false")
+extip_sched_leader_elect: "true"
+# Monitor
+extip_sched_monitor: "1s"

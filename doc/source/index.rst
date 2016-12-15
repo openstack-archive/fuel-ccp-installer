@@ -22,6 +22,7 @@ Contents
    collect_info
    specify_hyperkube_image
    configurable_params
+   external_ip_controller
 
 Search in this guide
 ~~~~~~~~~~~~~~~~~~~~

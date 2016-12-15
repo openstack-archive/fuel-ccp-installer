@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ extip_sched_app }}
+spec:
+  replicas: {{ extip_sched_replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ extip_sched_label }}
+    spec:
+      containers:
+        - name: externalipcontroller
+          image: {{ extip_image_repo }}:{{ extip_image_tag }}
+          imagePullPolicy: {{ extip_sched_image_pull_policy }}
+          command:
+            - ipmanager
+            - scheduler
+            - --mask={{ extip_mask }}
+            - --logtostderr
+            - --v={{ extip_sched_verbose }}
+            - --leader-elect={{ extip_sched_leader_elect }}
+            - --monitor={{ extip_sched_monitor }}
