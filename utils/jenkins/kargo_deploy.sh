@@ -263,7 +263,7 @@ elif admin_node_command test -e $ADMIN_WORKSPACE/inventory/custom.yaml; then
 fi
 
 if [ "${SLAVE_IPS}" ]; then
-    admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py ${SLAVE_IPS[@]}
+    admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/kargo/contrib/inventory_builder/inventory.py ${SLAVE_IPS[@]}
 fi
 
 # Data committed to the inventory has the highest priority, then installer defaults
@@ -281,7 +281,7 @@ fi
 # Try to get IPs from inventory first
 if [ -z "${SLAVE_IPS}" ]; then
     if admin_node_command stat $ADMIN_WORKSPACE/inventory/inventory.cfg; then
-        SLAVE_IPS=($(admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/utils/kargo/inventory.py print_ips))
+        SLAVE_IPS=($(admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/kargo/contrib/inventory_builder/inventory.py print_ips))
     else
         echo "No slave nodes available. Unable to proceed!"
         exit_gracefully 1
