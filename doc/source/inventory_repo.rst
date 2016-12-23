@@ -18,7 +18,7 @@ the repo root directory:
 
 * ``inventory.cfg`` - a mandatory inventory file. It must be created manually
   or generated based on ``$SLAVE_IPS`` provided with the
-  `helper script <https://github.com/openstack/fuel-ccp-installer/blob/master/utils/kargo/inventory.py>`_.
+  `helper script <https://github.com/kubernetes-incubator/kargo/blob/master/contrib/inventory_builder/inventory.py>`_.
 * ``kargo_default_common.yaml`` - a mandatory vars file, overrides the kargo
   defaults in the ``$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml``)
   and defaults for roles.
