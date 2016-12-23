@@ -17,7 +17,7 @@ save this inventory file to the path `$ADMIN_WORKSPACE/inventory`.
 Below you can find a few examples on how generate Ansible inventory that can be
 used for deployment.
 
-Using Fuel CCP's simple inventory generator
+Using Kargo's simple inventory generator
 -------------------------------------------
 If you run kargo_deploy.sh with a predefined list of nodes, it will generate
 Ansible inventory for you automatically. Below is an example:
