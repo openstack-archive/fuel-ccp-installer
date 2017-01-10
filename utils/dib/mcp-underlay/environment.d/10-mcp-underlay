@@ -1,0 +1,5 @@
+export DIB_DEV_USER_USERNAME="vagrant"
+export DIB_DEV_USER_PASSWORD="vagrant"
+export DIB_DEV_USER_PWDLESS_SUDO="yes"
+export DIB_CLOUD_INIT_DATASOURCES="ConfigDrive"
+export DIB_MODPROBE_BLACKLIST="evbug"
