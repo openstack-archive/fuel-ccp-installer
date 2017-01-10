@@ -142,8 +142,8 @@ function with_ansible {
 
 mkdir -p tmp logs
 
-# If INVENTORY_REPO or SLAVE_IPS are specified or REAPPLY is set, then treat env as pre-provisioned
-if [[ -z "$INVENTORY_REPO" && -z "$REAPPLY" && -z "$SLAVE_IPS" ]]; then
+# If INVENTORY_REPO, SLAVE_IPS, or IRONIC_NODE_LIST are specified or REAPPLY is set, then treat env as pre-provisioned
+if [[ -z "$INVENTORY_REPO" && -z "$REAPPLY" && -z "$SLAVE_IPS" && -z "$IRONIC_NODE_LIST" ]]; then
     ENV_TYPE="fuel-devops"
     dos.py erase ${ENV_NAME} || true
     rm -rf logs/*
@@ -262,8 +262,11 @@ elif admin_node_command test -e $ADMIN_WORKSPACE/inventory/custom.yaml; then
     custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
 fi
 
-if [ "${SLAVE_IPS}" ]; then
+if [ -n "${SLAVE_IPS}" ]; then
     admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/kargo/contrib/inventory_builder/inventory.py ${SLAVE_IPS[@]}
+elif [ -n "${IRONIC_NODE_LIST}" ]; then
+    inventory_formatted=$(echo -e "$IRONIC_NODE_LIST" | ${BASH_SOURCE%/*}/../ironic/nodelist_to_inventory.py)
+    admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/kargo/contrib/inventory_builder/inventory.py load /dev/stdin <<< "$inventory_formatted"
 fi
 
 # Data committed to the inventory has the highest priority, then installer defaults
