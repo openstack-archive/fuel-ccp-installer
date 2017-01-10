@@ -37,21 +37,21 @@
     insertafter: "^127.0.0.1 localhost"
     state: present
 
+
+- name: Ensure required packages are installed
+  apt:
+    name: "{{ item }}"
+    state: latest
+  when: ansible_os_family == "Debian"
+  with_items:
+   - dnsutils
+   - ntp
+   - netcat
+   - dbus
+
 - name: Update hostname via hostnamectl
   command: hostnamectl set-hostname {{ inventory_hostname }}
   when: updated_etc_hosts.changed
-
-- name: Ensure dnsutils is installed
-  apt:
-    name: dnsutils
-    state: latest
-  when: ansible_os_family == "Debian"
-
-- name: Ensure ntp is installed
-  apt:
-    name: ntp
-    state: latest
-  when: ansible_os_family == "Debian"
 
 
 # FIXME(mattymo): Opts are set too late (https://github.com/kubespray/kargo/issues/487)
