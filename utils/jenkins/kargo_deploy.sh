@@ -69,8 +69,9 @@ function exit_gracefully {
 }
 
 function with_retries {
-    set +e
     local retries=3
+    set +e
+    set -o pipefail
     for try in $(seq 1 $retries); do
         ${@}
         [ $? -eq 0 ] && break
@@ -78,6 +79,7 @@ function with_retries {
             exit 1
         fi
     done
+    set +o pipefail
     set -e
 }
 
@@ -124,9 +126,9 @@ function with_ansible {
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
         --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT \
         $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
-        $OS_SPECIFIC_DEFAULTS_OPT $custom_opts $@ $retry_opt; do
-            if [[ $tries > 1 ]]; then
-                (( tries-- ))
+        $OS_SPECIFIC_DEFAULTS_OPT $custom_opts $retry_opt $@; do
+            if [[ $tries -gt 1 ]]; then
+                tries=$((tries - 1))
                 echo "Deployment failed! Trying $tries more times..."
             else
                 collect_info
@@ -210,7 +212,10 @@ installed_ansible_version=$(admin_node_command dpkg-query -W -f='\${Version}\\n'
 if ! admin_node_command type ansible > /dev/null || \
         dpkg --compare-versions "$installed_ansible_version" "lt" "$required_ansible_version"; then
     # Wait for apt lock in case it is updating from cron job
-    while admin_node_command pgrep -a -f apt; do echo 'Waiting for apt lock...'; sleep 30; done
+    while admin_node_command pgrep -a -f apt; do
+        echo 'Waiting for apt lock...'
+        sleep 30
+    done
     case $ADMIN_NODE_BASE_OS in
         ubuntu)
             with_retries admin_node_command -- sudo apt-get update
@@ -325,8 +330,8 @@ with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-master:etcd
 
 # Only run non-master deployment if there are non-masters in inventory.
 if admin_node_command ansible-playbook -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-       $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-node:!kube-master:!etcd \
-       --list-hosts &>/dev/null; then
+        $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-node:!kube-master:!etcd \
+        --list-hosts &>/dev/null; then
     echo "Deploying k8s non-masters via ansible..."
     with_ansible $ADMIN_WORKSPACE/kargo/cluster.yml --limit kube-node:!kube-master:!etcd
 fi
