@@ -210,7 +210,7 @@ installed_ansible_version=$(admin_node_command dpkg-query -W -f='\${Version}\\n'
 if ! admin_node_command type ansible > /dev/null || \
         dpkg --compare-versions "$installed_ansible_version" "lt" "$required_ansible_version"; then
     # Wait for apt lock in case it is updating from cron job
-    while admin_node_command pgrep -a -f apt; do echo 'Waiting for apt lock...'; sleep 30; done
+    while admin_node_command pgrep -a -f '[^ssh].*apt'; do echo 'Waiting for apt lock...'; sleep 30; done
     case $ADMIN_NODE_BASE_OS in
         ubuntu)
             with_retries admin_node_command -- sudo apt-get update
