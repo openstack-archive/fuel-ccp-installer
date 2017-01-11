@@ -56,3 +56,16 @@
   when: dashboard.changed
   delegate_to: "{{groups['kube-master'][0]}}"
   run_once: true
+
+- name: Copy registry config
+  copy:
+    src: registry
+    dest: /etc/kubernetes/
+    owner: root
+    group: root
+    mode: 0644
+  register: registry
+
+- name: Create registry
+  command: "{{ bin_dir }}/kubectl create -f /etc/kubernetes/registry/"
+  when: registry.changed
