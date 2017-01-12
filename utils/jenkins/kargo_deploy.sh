@@ -84,8 +84,11 @@ function with_retries {
 }
 
 function admin_node_command {
+# Accepts commands from args passed to function or multiple commands via stdin,
+# one per line.
+
     if [[ "$ADMIN_IP" == "local" ]];then
-        eval "$@"
+        bash < <(test -z $# && echo -ne "$@" || cat)
     else
         ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
     fi
