@@ -245,7 +245,9 @@ if ! admin_node_command type ansible > /dev/null || \
         ;;
     esac
     wait_for_apt_lock_release
-    with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr git
+    with_retries admin_node_command -- sudo apt-get install -y python-netaddr git
+    # FIXME(apanchenko): remove the line below and install 'ansible' by the cmd above when buggy '2.2.1.0' is patched/replaced in ppa
+    with_retries admin_node_command -- "wget http://ppa.launchpad.net/ansible/ansible/ubuntu/pool/main/a/ansible/ansible_2.2.0.0-1ppa~xenial_all.deb && sudo dpkg -i ansible_2.2.0.0-1ppa~xenial_all.deb"
 fi
 
 echo "Checking out kargo playbook..."
