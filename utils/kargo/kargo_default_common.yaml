@@ -41,6 +41,7 @@ nameservers:
 upstream_dns_servers:
   - 8.8.4.4
 
-# Skip dnsmasq setup, use kubedns directly, with a limitation of max 3 of the
-# name/upstream_dns servers in the host's /etc/resolv.conf.
-#skip_dnsmasq: true
+# Configure how we tell pods how to find DNS. Upstream uses docker_dns, which
+# breaks host k8s resolution. We are using host_resolvconf configuration which
+# has some bugs when DHCP is enabled.
+resolvconf_mode: host_resolvconf
