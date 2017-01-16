@@ -222,16 +222,13 @@ if ! admin_node_command type ansible > /dev/null || \
     case $ADMIN_NODE_BASE_OS in
         ubuntu)
             wait_for_apt_lock_release
-            with_retries admin_node_command -- sudo apt-get update
-            wait_for_apt_lock_release
-            with_retries admin_node_command -- sudo apt-get install -y software-properties-common
-            wait_for_apt_lock_release
             with_retries admin_node_command -- sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv-keys 7BB9C367
             wait_for_apt_lock_release
             with_retries admin_node_command -- "sh -c \"sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu xenial main'\""
             wait_for_apt_lock_release
             with_retries admin_node_command -- sudo apt-get update
             wait_for_apt_lock_release
+            with_retries admin_node_command -- sudo apt-get install -y software-properties-common
         ;;
         debian)
             cat ${BASH_SOURCE%/*}/files/debian_backports_repo.list | admin_node_command "sudo sh -c 'cat - > /etc/apt/sources.list.d/backports.list'"
