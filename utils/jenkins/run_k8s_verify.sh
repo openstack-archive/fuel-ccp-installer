@@ -16,7 +16,7 @@ OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML
 SLAVE_IPS=( $SLAVE_IPS )
 ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
 
-required_ansible_version="2.1.0"
+required_ansible_version="2.2.0"
 
 function exit_gracefully {
     local exit_code=$?

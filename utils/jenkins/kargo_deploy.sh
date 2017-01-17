@@ -36,7 +36,7 @@ OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML
 LOG_LEVEL=${LOG_LEVEL:--v}
 ANSIBLE_TIMEOUT=${ANSIBLE_TIMEOUT:-600}
 
-required_ansible_version="2.1.0"
+required_ansible_version="2.2.0"
 
 function collect_info {
     # Get diagnostic info and store it as the logs.tar.gz at the admin node
