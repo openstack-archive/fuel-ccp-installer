@@ -279,8 +279,7 @@ if [ "${INVENTORY_REPO}" ]; then
     fi
 else
     echo "Generating ansible inventory on admin node..."
-    admin_node_command mkdir -p $ADMIN_WORKSPACE/inventory
-    admin_node_command git init $ADMIN_WORKSPACE/inventory
+    admin_node_command "sh -c 'mkdir -p $ADMIN_WORKSPACE/inventory && git init $ADMIN_WORKSPACE/inventory'"
 fi
 
 echo "Uploading default settings and inventory..."
@@ -330,8 +329,10 @@ KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml"
 
 echo "Committing inventory changes..."
 if ! admin_node_command git config --get user.name; then
-    admin_node_command git config --global user.name "Anonymous User"
-    admin_node_command git config --global user.email "anon@example.org"
+    admin_node_command << EOF
+git config --global user.name "Anonymous User"
+git config --global user.email "anon@example.org"
+EOF
 fi
 # Commit only if there are changes
 if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --cached --name-only --exit-code; then
