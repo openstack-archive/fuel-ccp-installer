@@ -233,7 +233,9 @@ if ! admin_node_command type ansible > /dev/null || \
             with_retries admin_node_command -- "sh -c \"sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu xenial main'\""
             wait_for_apt_lock_release
             with_retries admin_node_command -- sudo apt-get update
+            with_retries admin_node_command -- wget http://ppa.launchpad.net/ansible/ansible/ubuntu/pool/main/a/ansible/ansible_2.2.0.0-1ppa~xenial_all.deb
             wait_for_apt_lock_release
+            with_retries admin_node_command -- sudo apt install ansible_2.2.0.0-1ppa~xenial_all.deb
         ;;
         debian)
             cat ${BASH_SOURCE%/*}/files/debian_backports_repo.list | admin_node_command "sudo sh -c 'cat - > /etc/apt/sources.list.d/backports.list'"
