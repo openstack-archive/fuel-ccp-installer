@@ -234,9 +234,9 @@ if ! admin_node_command type ansible > /dev/null || \
             wait_for_apt_lock_release
             with_retries admin_node_command -- sudo apt-get update
             # (FIXME) temporary workaround until https://github.com/kubernetes-incubator/kargo/pull/910 will be merged
-            with_retries admin_node_command -- wget http://ppa.launchpad.net/ansible/ansible/ubuntu/pool/main/a/ansible/ansible_2.2.0.0-1ppa~xenial_all.deb
+            with_retries admin_node_command -- wget http://ajafo.pl/ansible/ansible_2.0.0.2-0.git201603312146.3b5d740.HEAD~unstable_all.deb
             wait_for_apt_lock_release
-            with_retries admin_node_command -- sudo apt -y install ./ansible_2.2.0.0-1ppa~xenial_all.deb
+            with_retries admin_node_command -- sudo dpkg -i ansible_2.0.0.2-0.git201603312146.3b5d740.HEAD~unstable_all.deb
         ;;
         debian)
             cat ${BASH_SOURCE%/*}/files/debian_backports_repo.list | admin_node_command "sudo sh -c 'cat - > /etc/apt/sources.list.d/backports.list'"
