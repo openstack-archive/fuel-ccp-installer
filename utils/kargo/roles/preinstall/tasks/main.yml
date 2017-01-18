@@ -49,10 +49,8 @@
    - netcat
    - dbus
 
-- name: Update hostname via hostnamectl
-  command: hostnamectl set-hostname {{ inventory_hostname }}
-  when: updated_etc_hosts.changed
-
+- name: Set hostname
+  hostname: {{ inventory_hostname }}
 
 # FIXME(mattymo): Opts are set too late (https://github.com/kubespray/kargo/issues/487)
 - name: Set Docker options early

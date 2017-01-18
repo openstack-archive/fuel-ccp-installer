@@ -20,6 +20,18 @@
     group: root
     mode: 0755
 
+- name: Get current list of kube nodes
+  command: kubectl get nodes
+  register: kubectl_nodes
+  delegate_to: "{{groups['kube-node'][0]}}"
+  run_once: true
+
+- name: Ensure kube-nodes are in list of nodes
+  fail:
+    msg: "{{inventory_hostname}} is not in kubectl get nodes"
+  when: inventory_hostname in groups['kube-node'] and \
+        inventory_hostname not in kubectl_nodes.stdout
+
 - name: Test networking connectivity
   shell: "bash {{ bin_dir }}/test_networking.sh"
   environment:
