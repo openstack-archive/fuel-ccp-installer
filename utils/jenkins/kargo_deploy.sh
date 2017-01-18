@@ -36,7 +36,9 @@ OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML
 LOG_LEVEL=${LOG_LEVEL:--v}
 ANSIBLE_TIMEOUT=${ANSIBLE_TIMEOUT:-600}
 
-required_ansible_version="2.1.0"
+# Valid sources: pip, apt
+ANSIBLE_INSTALL_SOURCE=pip
+required_ansible_version="2.2.0"
 
 function collect_info {
     # Get diagnostic info and store it as the logs.tar.gz at the admin node
@@ -129,7 +131,7 @@ function with_ansible {
 
     until admin_node_command \
         ANSIBLE_CONFIG=$ADMIN_WORKSPACE/utils/kargo/ansible.cfg \
-        /usr/bin/ansible-playbook \
+        ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
         -e ansible_ssh_user=${ADMIN_USER} \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
@@ -190,7 +192,7 @@ else
 fi
 
 # Install missing packages on the host running this script
-if ! type sshpass > /dev/null; then
+if ! type sshpass 2>&1 > /dev/null; then
     sudo apt-get update && sudo apt-get install -y sshpass
 fi
 
@@ -217,9 +219,7 @@ admin_node_command mkdir -p $ADMIN_WORKSPACE/utils/kargo
 tar cz ${BASH_SOURCE%/*}/../kargo | admin_node_command tar xzf - -C $ADMIN_WORKSPACE/utils/
 
 echo "Setting up ansible and required dependencies..."
-installed_ansible_version=$(admin_node_command dpkg-query -W -f='\${Version}\\n' ansible || echo "0.0")
-if ! admin_node_command type ansible > /dev/null || \
-        dpkg --compare-versions "$installed_ansible_version" "lt" "$required_ansible_version"; then
+if ! admin_node_command type ansible 2>&1 > /dev/null; then
     # Wait for apt lock in case it is updating from cron job
     case $ADMIN_NODE_BASE_OS in
         ubuntu)
@@ -245,7 +245,15 @@ if ! admin_node_command type ansible > /dev/null || \
         ;;
     esac
     wait_for_apt_lock_release
-    with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr git
+    if [[ "$ANSIBLE_INSTALL_SOURCE" == "apt" ]]; then
+        with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr git
+    elif [[ "$ANSIBLE_INSTALL_SOURCE" == "pip" ]]; then
+        with_retries admin_node_command -- sudo apt-get install -y python-netaddr git libssl-dev
+        with_retries admin_node_command -- sudo pip install --upgrade ansible==$required_ansible_version
+    else
+         echo "ERROR: Unknown Ansible install source: ${ANSIBLE_INSTALL_SOURCE}"
+         exit 1
+    fi
 fi
 
 echo "Checking out kargo playbook..."
