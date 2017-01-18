@@ -36,6 +36,8 @@ OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML
 LOG_LEVEL=${LOG_LEVEL:--v}
 ANSIBLE_TIMEOUT=${ANSIBLE_TIMEOUT:-600}
 
+# Valid sources: pip, apt
+ANSIBLE_INSTALL_SOURCE=pip
 required_ansible_version="2.1.0"
 
 function collect_info {
@@ -245,7 +247,15 @@ if ! admin_node_command type ansible > /dev/null || \
         ;;
     esac
     wait_for_apt_lock_release
-    with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr git
+    if [[ "$ANSIBLE_INSTALL_SOURCE" == "apt" ]]; then
+        with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr git
+    elif [[ "$ANSIBLE_INSTALL_SOURCE" == "pip" ]]; then
+        with_retries admin_node_command -- sudo apt-get install -y python-netaddr git
+        sudo pip install --upgrade ansible==2.2.0
+    else
+         echo "ERROR: Unknown Ansible install source: ${ANSIBLE_INSTALL_SOURCE}"
+         exit 1
+    fi
 fi
 
 echo "Checking out kargo playbook..."
