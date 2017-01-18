@@ -12,6 +12,13 @@
     state: directory
     owner: "{{ansible_ssh_user}}"
 
+- name: Configure logs | ensure config file
+  file:
+    path: "{{conf_file}}"
+    owner: root
+    group: root
+    mode: 0644
+
 - name: Configure logs | get plugins
   git:
     repo: "{{item.repo}}"
