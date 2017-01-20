@@ -89,7 +89,13 @@ function admin_node_command {
 # Accepts commands from args passed to function or multiple commands via stdin,
 # one per line.
     if [[ "$ADMIN_IP" == "local" ]]; then
-        bash < <(test $# -gt 0 && echo -ne "$@" || cat)
+        if [ $# -gt 0 ];then
+            eval "$@"
+        else
+            cat | while read cmd; do
+               eval "$cmd"
+            done
+        fi
     else
         ssh $SSH_OPTIONS $ADMIN_USER@$ADMIN_IP "$@"
     fi
