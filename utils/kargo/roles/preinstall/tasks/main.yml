@@ -16,6 +16,7 @@
   become: false
   register: ssh_pubkeys
   changed_when: false
+  failed_when: false
 
 - name: Add SSH pubkey to authorized_keys
   authorized_key:
@@ -23,7 +24,7 @@
     key: "{{ item }}"
     state: present
   with_items: "{{ ssh_pubkeys.stdout_lines }}"
-  changed_when: false
+  when: ssh_pubkeys.rc == 0
 
 - include: process_certificates.yml
   when: trust_self_signed_certs|bool
