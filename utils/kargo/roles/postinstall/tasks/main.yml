@@ -44,7 +44,9 @@
   become: no
 
 - name: Check netchecker status
-  uri: url=http://localhost:31081/api/v1/connectivity_check status_code=200
+  uri: url=http://localhost:31081/api/v1/connectivity_check
+  register: netchecker_status
+  until: netchecker_status.status == 200
   retries: 6
   delay: 20
   delegate_to: "{{groups['kube-node'][0]}}"
