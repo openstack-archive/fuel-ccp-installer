@@ -23,7 +23,7 @@
     key: "{{ item }}"
     state: present
   with_items: "{{ ssh_pubkeys.stdout_lines }}"
-  changed_when: false
+  when: ssh.pubkeys.rc == 0
 
 - include: process_certificates.yml
   when: trust_self_signed_certs|bool
