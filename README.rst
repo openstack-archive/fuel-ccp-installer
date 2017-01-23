@@ -3,7 +3,7 @@ Express Fuel CCP Kubernetes deployment using Kargo
 
 Deploy Kubernetes on pre-provisioned virtual or bare metal hosts
 
-This project leverages [Kargo](https://github.com/kubespray/kargo) to deploy
+This project leverages `Kargo <https://github.com/kubespray/kargo>`_ to deploy
 Kubernetes with Calico networking plugin.
 
 There are four ways you can use to deploy:
@@ -11,17 +11,17 @@ There are four ways you can use to deploy:
 * Preprovisioned list of hosts
 * Precreated Ansible inventory
 * Vagrant
-* [fuel-devops](https://github.com/openstack/fuel-devops)
+* `fuel-devops <https://github.com/openstack/fuel-devops>`_
 
 Preprovisioned list of hosts
 ----------------------------
 
-See [Quickstart guide](doc/source/quickstart.rst)
+See :doc:`Quickstart guide <quickstart>`.
 
 Precreated Ansible inventory
 ----------------------------
 
-See [Generating Ansible Inventory](doc/source/generate-inventory.rst)
+See :doc:`Generating Ansible Inventory <generate_inventory>`.
 
 Vagrant
 -------
@@ -36,4 +36,4 @@ vagrant up --provider virtualbox
 Using Libvirt
 =============
 
-See [Vagrant libvirt guide](doc/source/vagrant.rst)
+See :doc:`Vagrant libvirt guide <vagrant>`.
