@@ -164,19 +164,26 @@ mkdir -p tmp logs
 # If INVENTORY_REPO, SLAVE_IPS, or IRONIC_NODE_LIST are specified or REAPPLY is set, then treat env as pre-provisioned
 if [[ -z "$INVENTORY_REPO" && -z "$REAPPLY" && -z "$SLAVE_IPS" && -z "$IRONIC_NODE_LIST" ]]; then
     ENV_TYPE="fuel-devops"
+
+    echo "Trying to ensure bridge-nf-call-iptables is disabled..."
+    br_netfilter=$(cat /proc/sys/net/bridge/bridge-nf-call-iptables)
+    if [[ "$br_netfilter" == "1" ]]; then
+        sudo echo 0 > /proc/sys/net/bridge/bridge-nf-call-iptables
+    fi
+
     dos.py erase ${ENV_NAME} || true
     rm -rf logs/*
     ENV_NAME=${ENV_NAME} SLAVES_COUNT=${SLAVES_COUNT} IMAGE_PATH=${IMAGE_PATH} CONF_PATH=${CONF_PATH} python ${BASH_SOURCE%/*}/env.py create_env
 
     SLAVE_IPS=($(ENV_NAME=${ENV_NAME} python ${BASH_SOURCE%/*}/env.py get_slaves_ips | tr -d "[],'"))
     # Set ADMIN_IP=local to use current host to run ansible
-    ADMIN_IP=${SLAVE_IPS[0]}
-    wait_for_nodes $ADMIN_IP
+    ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
+    wait_for_nodes ${SLAVE_IPS[0]}
 else
     ENV_TYPE=${ENV_TYPE:-other_or_reapply}
     SLAVE_IPS=( $SLAVE_IPS )
-    ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
 fi
+ADMIN_IP=${ADMIN_IP:-${SLAVE_IPS[0]}}
 
 # Trap errors during env preparation stage
 trap exit_gracefully ERR INT TERM
