@@ -3,6 +3,8 @@ kube_network_plugin: "calico"
 #Required for calico
 kube_proxy_mode: "iptables"
 kube_apiserver_insecure_port: "8080"
+#Allow services to expose nodePorts in a wide range
+kube_apiserver_node_port_range: "25000-50000"
 
 #Configure calico to set --nat-outgoing, but not --ipip
 ipip: false
