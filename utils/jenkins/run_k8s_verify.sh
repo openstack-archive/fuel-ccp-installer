@@ -148,22 +148,11 @@ if ! admin_node_command type ansible > /dev/null || \
     admin_node_command sudo apt-get install -y ansible python-netaddr git
 fi
 
-
-# If no inventory repo, reuse a local git repo if it already exists.
-# Otherwise, fail.
-if [ "${INVENTORY_REPO}" ]; then
-    admin_node_command "sh -c 'git clone $INVENTORY_REPO $ADMIN_WORKSPACE/inventory'" || true
-    if [ -n "${INVENTORY_COMMIT}" ]; then
-        admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git fetch --all && git checkout $INVENTORY_COMMIT'"
-    fi
-else
-    # For local-only deployments, use local inventory
-    if ! admin_node_command test -f $ADMIN_WORKSPACE/inventory/inventory.cfg; then
-        echo "ERROR: INVENTORY_REPO is not defined and there is no \
-inventory.cfg cloned on admin node in \ADMIN_WORKSPACE/inventory/inventory.cfg \
+# Ensure inventory exists
+if ! admin_node_command test -f $ADMIN_WORKSPACE/inventory/inventory.cfg; then
+    echo "ERROR: $ADMIN_WORKSPACE/inventory/inventory.cfg does not exist. \
 Cannot proceed."
-        exit_gracefully 1
-    fi
+    exit_gracefully 1
 fi
 
 if [ -n "$SLAVE_IPS" ]; then
