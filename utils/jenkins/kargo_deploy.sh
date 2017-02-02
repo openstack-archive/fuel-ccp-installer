@@ -225,6 +225,14 @@ admin_node_command mkdir -p $ADMIN_WORKSPACE/utils/kargo
 tar cz ${BASH_SOURCE%/*}/../kargo | admin_node_command tar xzf - -C $ADMIN_WORKSPACE/utils/
 
 echo "Setting up ansible and required dependencies..."
+# Install mandatory packages on admin node
+if ! admin_node_command type sshpass 2>&1 > /dev/null; then
+    sudo apt-get update && sudo apt-get install -y sshpass
+fi
+if ! admin_node_command type git 2>&1 > /dev/null; then
+    sudo apt-get update && sudo apt-get install -y git
+fi
+
 if ! admin_node_command type ansible 2>&1 > /dev/null; then
     # Wait for apt lock in case it is updating from cron job
     case $ADMIN_NODE_BASE_OS in
@@ -252,9 +260,9 @@ if ! admin_node_command type ansible 2>&1 > /dev/null; then
     esac
     wait_for_apt_lock_release
     if [[ "$ANSIBLE_INSTALL_SOURCE" == "apt" ]]; then
-        with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr git
+        with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr
     elif [[ "$ANSIBLE_INSTALL_SOURCE" == "pip" ]]; then
-        with_retries admin_node_command -- sudo apt-get install -y python-netaddr git libssl-dev
+        with_retries admin_node_command -- sudo apt-get install -y python-netaddr libssl-dev python-pip
         with_retries admin_node_command -- sudo pip install --upgrade ansible==$required_ansible_version
     else
          echo "ERROR: Unknown Ansible install source: ${ANSIBLE_INSTALL_SOURCE}"
