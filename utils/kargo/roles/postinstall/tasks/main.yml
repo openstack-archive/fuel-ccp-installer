@@ -1,4 +1,7 @@
 ---
+- include: dns_fix.yml
+  when: kube_network_plugin in ['canal', 'calico']
+
 - name: pick dnsmasq cluster IP
   set_fact:
     dnsmasq_server: >-
