@@ -42,11 +42,11 @@
       networking
       {%- endif %}
 
-- name: Restart networking, kubelet, and docker services
+- name: Restart networking, dhclient, and calico-felix
   shell: "{{ item }}"
   when: needs_network_reset|bool and inventory_hostname in groups['k8s-cluster']
   with_items:
   - systemctl restart {{ networking_service_name }}
   - killall dhclient --older-than {{ mtime_dhclientconf }}s
-  - docker exec -t -i calico-node killall -HUP calico-felix
+  - docker exec calico-node killall -HUP calico-felix
 
