@@ -45,8 +45,8 @@
 - name: Restart networking, dhclient, and calico-felix
   shell: "{{ item }}"
   when: needs_network_reset|bool and inventory_hostname in groups['k8s-cluster']
+  failed_when: false # in case dhclient was stopped
   with_items:
+  - killall -q dhclient --older-than {{ mtime_dhclientconf }}s
   - systemctl restart {{ networking_service_name }}
-  - killall dhclient --older-than {{ mtime_dhclientconf }}s
   - docker exec calico-node killall -HUP calico-felix
-
