@@ -35,6 +35,7 @@ OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
 OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
 LOG_LEVEL=${LOG_LEVEL:--v}
 ANSIBLE_TIMEOUT=${ANSIBLE_TIMEOUT:-600}
+ANSIBLE_FORKS=${ANSIBLE_FORKS:-50}
 
 # Valid sources: pip, apt
 ANSIBLE_INSTALL_SOURCE=pip
@@ -161,8 +162,8 @@ function with_ansible {
 
 mkdir -p tmp logs
 
-# If INVENTORY_REPO, SLAVE_IPS, or IRONIC_NODE_LIST are specified or REAPPLY is set, then treat env as pre-provisioned
-if [[ -z "$INVENTORY_REPO" && -z "$REAPPLY" && -z "$SLAVE_IPS" && -z "$IRONIC_NODE_LIST" ]]; then
+# If SLAVE_IPS or IRONIC_NODE_LIST are specified or REAPPLY is set, then treat env as pre-provisioned
+if [[ -z "$REAPPLY" && -z "$SLAVE_IPS" && -z "$IRONIC_NODE_LIST" ]]; then
     ENV_TYPE="fuel-devops"
 
     echo "Trying to ensure bridge-nf-call-iptables is disabled..."
@@ -228,7 +229,7 @@ if [[ -n "$ADMIN_NODE_CLEANUP" ]]; then
         done
     fi
 fi
-admin_node_command mkdir -p $ADMIN_WORKSPACE/utils/kargo
+admin_node_command mkdir -p "$ADMIN_WORKSPACE/utils/kargo" "$ADMIN_WORKSPACE/inventory"
 tar cz ${BASH_SOURCE%/*}/../kargo | admin_node_command tar xzf - -C $ADMIN_WORKSPACE/utils/
 
 echo "Setting up ansible and required dependencies..."
@@ -281,31 +282,20 @@ echo "Checking out kargo playbook..."
 admin_node_command git clone "$KARGO_REPO" "$ADMIN_WORKSPACE/kargo" || true
 admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/kargo && git fetch --all && git checkout $KARGO_COMMIT'"
 
-# If no inventory repo, just make a local git repo and carry on and deploy.
-# Otherwise, clone it and decide on the final deployment data.
-if [ "${INVENTORY_REPO}" ]; then
-    admin_node_command "sh -c 'git clone $INVENTORY_REPO $ADMIN_WORKSPACE/inventory'" || true
-    if [ -n "${INVENTORY_COMMIT}" ]; then
-        admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git fetch --all && git checkout $INVENTORY_COMMIT'"
-    fi
-    if [ "${SLAVE_IPS}" -a -f $ADMIN_WORKSPACE/inventory/inventory.cfg ]; then
-        echo "ERROR: Updating inventory via SLAVE_IPS env var after initial deployment is not supported."
-        exit 1
-    fi
-else
-    echo "Generating ansible inventory on admin node..."
-    admin_node_command "sh -c 'mkdir -p $ADMIN_WORKSPACE/inventory && git init $ADMIN_WORKSPACE/inventory'"
-fi
-
 echo "Uploading default settings and inventory..."
-cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
-cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
+# Only copy default files if they are absent from inventory dir
+if ! admin_node_command test -e "$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"; then
+    cat $COMMON_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
+fi
+if ! admin_node_command test -e "$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"; then
+    cat $OS_SPECIFIC_DEFAULTS_SRC | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
+fi
 
 if [[ -n "${CUSTOM_YAML}" ]]; then
     echo "Uploading custom YAML for deployment..."
     echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/custom.yaml"
-    custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
-elif admin_node_command test -e $ADMIN_WORKSPACE/inventory/custom.yaml; then
+fi
+if admin_node_command test -e "$ADMIN_WORKSPACE/inventory/custom.yam"l; then
     custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
 fi
 
@@ -314,18 +304,6 @@ if [ -n "${SLAVE_IPS}" ]; then
 elif [ -n "${IRONIC_NODE_LIST}" ]; then
     inventory_formatted=$(echo -e "$IRONIC_NODE_LIST" | ${BASH_SOURCE%/*}/../ironic/nodelist_to_inventory.py)
     admin_node_command CONFIG_FILE=$ADMIN_WORKSPACE/inventory/inventory.cfg python3 $ADMIN_WORKSPACE/kargo/contrib/inventory_builder/inventory.py load /dev/stdin <<< "$inventory_formatted"
-fi
-
-# Data committed to the inventory has the highest priority, then installer defaults
-echo "Deciding on deployment data to the inventory repo..."
-# Stage only new data files
-admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -o --exclude-standard | xargs -n1 git add'"
-if [ -z "${INVENTORY_REPO}" ]; then
-    # Local only repos must stage any changes as well
-    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -m | xargs -n1 git add'"
-else
-    # Reset changed data files for remote repos
-    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git ls-files -m | xargs -n1 git checkout -- .'"
 fi
 
 # Try to get IPs from inventory first
@@ -341,26 +319,6 @@ fi
 COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
 KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml"
-
-echo "Committing inventory changes..."
-if ! admin_node_command git config --get user.name; then
-    admin_node_command << EOF
-git config --global user.name "Anonymous User"
-git config --global user.email "anon@example.org"
-EOF
-fi
-# Commit only if there are changes
-if ! admin_node_command git -C $ADMIN_WORKSPACE/inventory diff --cached --name-only --exit-code; then
-    admin_node_command "sh -c 'cd $ADMIN_WORKSPACE/inventory && git commit -a -m Automated\ commit'"
-    COMMIT_DONE=true
-fi
-
-# Calculate parallel ansible execution
-if [[ "${#SLAVE_IPS[@]}" -lt 50 ]]; then
-    ANSIBLE_FORKS="${#SLAVE_IPS[@]}"
-else
-    ANSIBLE_FORKS=50
-fi
 
 # Stop trapping pre-setup tasks
 set +e
@@ -382,16 +340,6 @@ fi
 
 echo "Initial deploy succeeded. Proceeding with post-install tasks..."
 with_ansible $ADMIN_WORKSPACE/utils/kargo/postinstall.yml
-
-# Submit the commit to gerrit
-if [ "${COMMIT_DONE}" = "true" ]; then
-    if admin_node_command test -e $ADMIN_WORKSPACE/inventory/.gitreview; then
-        echo "Changes were made to deployment. Proposing change request to configuration repository..."
-        admin_node_command git -C $ADMIN_WORKSPACE/inventory review -s
-        admin_node_command git -C $ADMIN_WORKSPACE/inventory review || true
-        echo "Go to the Gerrit link above and review the changes."
-    fi
-fi
 
 # FIXME(mattymo): Move this to underlay
 # setup VLAN if everything is ok and env will not be deleted
