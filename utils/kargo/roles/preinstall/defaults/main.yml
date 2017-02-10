@@ -1,5 +1,6 @@
 # Istall discovered self signed certificates
 trust_self_signed_certs: false
+atop_interval: 60
 
 # Certificates to be preinstalled for cluster nodes, if trusted
 # NOTE: indentation is crucial!
