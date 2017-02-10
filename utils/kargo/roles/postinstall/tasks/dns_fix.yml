@@ -29,6 +29,9 @@
   set_fact:
     needs_network_reset: "{{ oldest_dhclient_time.stdout != '' and oldest_dhclient_time.stdout|int < dhclient_stat.stat.mtime }}"
 
+- name: update ansible time
+  setup: filter=ansible_date_time
+
 - name: Calculate number of seconds since dhclient.conf was modified
   set_fact:
     mtime_dhclientconf: "{{ ansible_date_time.epoch|int - dhclient_stat.stat.mtime|int }}"
