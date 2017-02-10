@@ -38,6 +38,13 @@
     insertafter: "^127.0.0.1 localhost"
     state: present
 
+- name: Set atop interval
+  copy:
+    path: /etc/default/atop
+    content: "INTERVAL={{ atop_interval }}"
+    mode: 0755
+    owner: root
+    group: root
 
 - name: Ensure required packages are installed
   apt:
@@ -45,6 +52,7 @@
     state: latest
   when: ansible_os_family == "Debian"
   with_items:
+   - atop
    - dnsutils
    - ntp
    - netcat
