@@ -1,0 +1,5 @@
+ubuntu-minimal
+openssh-server
+devuser
+cloud-init-datasources
+modprobe-blacklist
