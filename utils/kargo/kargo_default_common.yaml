@@ -49,3 +49,8 @@ upstream_dns_servers:
 # breaks host k8s resolution. We are using host_resolvconf configuration which
 # has some bugs when DHCP is enabled.
 resolvconf_mode: host_resolvconf
+
+# Tweak kubelet monitoring parameters to node/endpoint node flapping
+kubelet_status_update_frequency: "20s"
+kube_controller_node_monitor_grace_period: "2m"
+kube_controller_node_monitor_period: "10s"
