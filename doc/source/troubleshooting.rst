@@ -40,7 +40,7 @@ You can as well run all network checks from the admin node:
 .. code:: sh
 
       export ws=/home/workspace/
-      /usr/bin/ansible-playbook -e ansible_ssh_pass=vagrant -u vagrant -b \
+      ansible-playbook -e ansible_ssh_pass=vagrant -u vagrant -b \
       --become-user=root -i ~${ws}inventory/inventory.cfg \
       -e @${ws}kargo/inventory/group_vars/all.yml \
       -e @${ws}inventory/kargo_default_common.yaml \

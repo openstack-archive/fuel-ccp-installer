@@ -16,7 +16,7 @@ admin node::
 .. code:: sh
 
       export ws=~/workspace/
-      /usr/bin/ansible-playbook --ssh-extra-args '-o\ StrictHostKeyChecking=no' \
+      ansible-playbook --ssh-extra-args '-o\ StrictHostKeyChecking=no' \
       -u vagrant -b --become-user=root -i ~/${ws}inventory/inventory.cfg \
       -e @${ws}kargo/inventory/group_vars/all.yml \
       -e @${ws}utils/kargo/roles/configure_logs/defaults/main.yml \
