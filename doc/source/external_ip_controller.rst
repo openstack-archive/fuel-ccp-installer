@@ -91,7 +91,7 @@ Just run the following ansible-playbook command:
 .. code:: sh
 
       export ws=/home/workspace
-      /usr/bin/ansible-playbook -e ansible_ssh_pass=vagrant -u vagrant -b \
+      ansible-playbook -e ansible_ssh_pass=vagrant -u vagrant -b \
       --become-user=root -i ${ws}/inventory/inventory.cfg \
       -e @${ws}/utils/jenkins/extip_ecmp.yaml \
       ${ws}/utils/kargo/externalip.yaml

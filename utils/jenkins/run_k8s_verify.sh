@@ -73,7 +73,7 @@ function wait_for_nodes {
 
 function with_ansible {
     local tries=1
-    until admin_node_command /usr/bin/ansible-playbook \
+    until admin_node_command ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
         $@ $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
