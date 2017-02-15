@@ -19,16 +19,16 @@ dns_forward_max: 300
 #Overridden component versions (different from Kargo upstream
 #revision aaa3f1c4910ae23718bb6e3a0080b1af97575bac)
 #Set kubernetes version
-kube_version: "v1.5.1"
+kube_version: "v1.5.2"
 hyperkube_image_repo: "quay.io/coreos/hyperkube"
-hyperkube_image_tag: "v1.5.1_coreos.0"
-etcd_version: "v3.0.12"
+hyperkube_image_tag: "v1.5.2_coreos.1"
+etcd_version: "v3.1.0"
 #Download once, then push to nodes in batches, if enabled
 download_run_once: true
 #Enable netchecker app
 deploy_netchecker: true
 
-calico_version: "v1.0.0"
+calico_version: "v1.0.2"
 
 #Force calico CNI binaries to overwrite the ones copied from
 #hyperkube while leaving other cni plugins intact
