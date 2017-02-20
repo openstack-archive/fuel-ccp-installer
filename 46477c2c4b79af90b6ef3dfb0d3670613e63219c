@@ -1,0 +1,9 @@
+Verified+1: Mirantis CCP CI <mirantis-fuel-ccp-ci@mirantis.com>
+Code-Review+2: Matthew Mosesohn <mmosesohn@mirantis.com>
+Workflow+1: Matthew Mosesohn <mmosesohn@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 20 Feb 2017 17:28:15 +0000
+Reviewed-on: https://review.openstack.org/434364
+Project: openstack/fuel-ccp-installer
+Branch: refs/heads/master
