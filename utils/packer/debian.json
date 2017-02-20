@@ -32,10 +32,8 @@
       "type": "qemu",
       "vm_name": "qemu-{{ user `name` }}",
       "iso_checksum_type": "sha256",
-      "iso_checksum": "ad4e8c27c561ad8248d5ebc1d36eb172f884057bfeb2c22ead823f59fa8c3dff",
-      "iso_urls": [
-        "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/{{ user `iso_name` }}.iso"
-      ],
+      "iso_checksum_url": "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/SHA256SUMS",
+      "iso_url": "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/{{ user `iso_name` }}.iso",
       "shutdown_command": "echo '{{ user `ssh_password` }}' | sudo -S shutdown -P now",
       "disk_size": "{{ user `disk_size` }}",
       "headless": "{{ user `headless` }}",
@@ -74,10 +72,8 @@
       "type": "virtualbox-iso",
       "vm_name": "virtualbox-{{ user `name` }}",
       "iso_checksum_type": "sha256",
-      "iso_checksum": "ad4e8c27c561ad8248d5ebc1d36eb172f884057bfeb2c22ead823f59fa8c3dff",
-      "iso_urls": [
-        "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/{{ user `iso_name` }}.iso"
-      ],
+      "iso_checksum_url": "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/SHA256SUMS",
+      "iso_url": "{{ user `debian_mirror` }}/{{ user `debian_version` }}/amd64/iso-cd/{{ user `iso_name` }}.iso",
       "shutdown_command": "echo 'vagrant' | sudo -S shutdown -P now",
       "disk_size": "{{ user `disk_size` }}",
       "headless": "{{ user `headless` }}",
