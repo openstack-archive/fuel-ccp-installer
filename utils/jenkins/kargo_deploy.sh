@@ -140,10 +140,10 @@ function with_ansible {
         ANSIBLE_CONFIG=$ADMIN_WORKSPACE/utils/kargo/ansible.cfg \
         ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
-        -e ansible_ssh_user=${ADMIN_USER} \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
         --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT \
         $KARGO_DEFAULTS_OPT $COMMON_DEFAULTS_OPT \
+        -e ansible_ssh_user=${ADMIN_USER} \
         $OS_SPECIFIC_DEFAULTS_OPT $custom_opts $retry_opt $@; do
             if [[ $tries -gt 1 ]]; then
                 tries=$((tries - 1))
@@ -295,7 +295,7 @@ if [[ -n "${CUSTOM_YAML}" ]]; then
     echo "Uploading custom YAML for deployment..."
     echo -e "$CUSTOM_YAML" | admin_node_command "cat > $ADMIN_WORKSPACE/inventory/custom.yaml"
 fi
-if admin_node_command test -e "$ADMIN_WORKSPACE/inventory/custom.yam"l; then
+if admin_node_command test -e "$ADMIN_WORKSPACE/inventory/custom.yaml"; then
     custom_opts="-e @$ADMIN_WORKSPACE/inventory/custom.yaml"
 fi
 
@@ -318,7 +318,7 @@ fi
 
 COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
-KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml"
+KARGO_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/all.yml -e @$ADMIN_WORKSPACE/kargo/inventory/group_vars/k8s-cluster.yml"
 
 # Stop trapping pre-setup tasks
 set +e
