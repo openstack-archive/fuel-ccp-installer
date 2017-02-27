@@ -1,3 +1,4 @@
+bin_dir: /usr/local/bin
 log_path: /var/log/ansible/
 conf_file: /etc/ansible/ansible.cfg
 callback_plugins:
