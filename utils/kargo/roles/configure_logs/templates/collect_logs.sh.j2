@@ -10,7 +10,7 @@ if [ "${ADMIN_PASSWORD}" -a -z "${NO_SSH_PASSWORD}" ]; then
     SSH_WRAPPER="-e ansible_ssh_pass=${ADMIN_PASSWORD}"
 fi
 
-/usr/bin/ansible-playbook ${LOG_LEVEL} \
+ansible-playbook ${LOG_LEVEL} \
         --ssh-extra-args "$SSH_EXTRA_ARGS" -u ${ADMIN_USER} -b ${SSH_WRAPPER} \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
         -e searchpath=$ADMIN_WORKSPACE \
