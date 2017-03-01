@@ -1,0 +1,8 @@
+etcd_memory_limit: 0
+kube_apiserver_memory_limit: unlimited
+kube_apiserver_cpu_limit: 0
+kube_scheduler_memory_limit: unlimited
+kube_controller_memory_limit: unlimited
+kube_controller_node_monitor_grace_period: 2m
+kube_controller_node_monitor_period: 20s
+kube_controller_pod_eviction_timeout: 5m0s
