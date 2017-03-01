@@ -33,6 +33,9 @@ COMMON_DEFAULTS_YAML="kargo_default_common.yaml"
 COMMON_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_YAML="kargo_default_${NODE_BASE_OS}.yaml"
 OS_SPECIFIC_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${OS_SPECIFIC_DEFAULTS_YAML}"
+SCALE_DEFAULTS_YAML="scale_defaults.yaml"
+SCALE_DEFAULTS_SRC="${BASH_SOURCE%/*}/../kargo/${SCALE_DEFAULTS_YAML}"
+SCALE_MODE=${SCALE_MODE:-no}
 LOG_LEVEL=${LOG_LEVEL:--v}
 ANSIBLE_TIMEOUT=${ANSIBLE_TIMEOUT:-600}
 ANSIBLE_FORKS=${ANSIBLE_FORKS:-50}
@@ -141,8 +144,7 @@ function with_ansible {
         ansible-playbook \
         --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
-        --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT \
-        $COMMON_DEFAULTS_OPT $OS_SPECIFIC_DEFAULTS_OPT \
+        --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT $DEFAULT_OPTS \
         -e ansible_ssh_user=${ADMIN_USER} \
         $custom_opts $retry_opt $@; do
             if [[ $tries -gt 1 ]]; then
@@ -321,6 +323,12 @@ fi
 
 COMMON_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${COMMON_DEFAULTS_YAML}"
 OS_SPECIFIC_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${OS_SPECIFIC_DEFAULTS_YAML}"
+SCALE_DEFAULTS_OPT="-e @$ADMIN_WORKSPACE/inventory/${SCALE_DEFAULTS_YAML}"
+if [[ "${#SLAVE_IPS[@]}" -lt 50 && "$SCALE_MODE" == "no" ]]; then
+    DEFAULT_OPTS="${COMMON_DEFAULTS_OPT} ${OS_SPECIFIC_DEFAULTS_OPT}"
+else
+    DEFAULT_OPTS="${COMMON_DEFAULTS_OPT} ${OS_SPECIFIC_DEFAULTS_OPT} ${SCALE_DEFAULTS_OPT}"
+fi
 
 # Stop trapping pre-setup tasks
 set +e
