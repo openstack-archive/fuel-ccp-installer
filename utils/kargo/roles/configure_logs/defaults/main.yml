@@ -1,20 +1,6 @@
 bin_dir: /usr/local/bin
 log_path: /var/log/ansible/
 conf_file: /etc/ansible/ansible.cfg
-callback_plugins:
-  - name: human_readable_plugin
-    enabled: true
-    repo: https://gist.github.com/cd706de198c85a8255f6.git
-    rev: cd706de198c85a8255f6
-    script_path: ./
-    script_name: human_log.py
-  - name: timestamp_plugin
-    enabled: true
-    repo: https://github.com/bogdando/ansible-plugins.git
-    rev: 0.1.0
-    script_path: ./callback_plugins
-    script_name: timestamp.py
-callback_plugin_path: /usr/share/ansible/plugins/callback
 # Define custom diag info to collect
 commands:
   - name: git_info

@@ -6,12 +6,6 @@
     state: directory
     owner: "{{ansible_ssh_user}}"
 
-- name: Configure logs | ensure plugin path
-  file:
-    path: "{{callback_plugin_path}}"
-    state: directory
-    owner: "{{ansible_ssh_user}}"
-
 - name: Configure logs | ensure config dir
   file:
     path: "{{conf_file | dirname}}"
@@ -30,44 +24,10 @@
     group: root
     mode: 0644
 
-- name: Configure logs | get plugins
-  git:
-    repo: "{{item.repo}}"
-    dest: "/tmp/{{item.name}}/{{item.rev}}"
-  when: "{{item.enabled == true}}"
-  with_items: "{{callback_plugins}}"
-
-- name: Configure logs | install plugins
-  copy:
-    src: "/tmp/{{item.name}}/{{item.rev}}/{{item.script_path}}/{{item.script_name}}"
-    dest: "{{callback_plugin_path}}"
-  when: "{{item.enabled == true}} "
-  with_items: "{{callback_plugins}}"
-
-- name: Configure logs | remove disabled plugins
-  file:
-    path: "{{callback_plugin_path}}/{{item.script_name}}"
-    state: absent
-  when: "{{item.enabled == false}}"
-  with_items: "{{callback_plugins}}"
-
-- name: Configure logs | teardown plugins
-  file:
-    path: "/tmp/{{item.name}}/{{item.rev}}"
-    state: absent
-  when: "{{item.enabled == true}}"
-  with_items: "{{callback_plugins}}"
-
 - name: Configure logs | config
   lineinfile:
     line: "log_path={{log_path}}/ansible.log"
     regexp: "^#log_path|^log_path"
-    dest: "{{conf_file}}"
-
-- name: Configure logs | callback plugin
-  lineinfile:
-    line: "callback_plugins={{callback_plugin_path}}"
-    regexp: "^#callback_plugins|^callback_plugins"
     dest: "{{conf_file}}"
 
 - name: Configure logs | Install script for collecting info
