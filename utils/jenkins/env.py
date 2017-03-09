@@ -4,7 +4,7 @@ import os
 import sys
 
 from devops.helpers.templates import yaml_template_load
-from devops.models import Environment
+from devops import models
 
 
 def create_config():
@@ -44,7 +44,7 @@ def _get_free_eth_interface(node):
 def get_env():
     env = os.environ
     env_name = env['ENV_NAME']
-    return Environment.get(name=env_name)
+    return models.Environment.get(name=env_name)
 
 
 def get_master_ip(env):
@@ -71,7 +71,7 @@ def get_bridged_iface_mac(env, ip):
 
 
 def define_from_config(conf):
-    env = Environment.create_environment(conf)
+    env = models.Environment.create_environment(conf)
     env.define()
     env.start()
 
