@@ -142,7 +142,8 @@ function with_ansible {
     until admin_node_command \
         ANSIBLE_CONFIG=$ADMIN_WORKSPACE/utils/kargo/ansible.cfg \
         ansible-playbook \
-        --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no" -u ${ADMIN_USER} -b \
+        --ssh-extra-args "-A\ -o\ StrictHostKeyChecking=no\ -o\ ConnectionAttempts=20" \
+        -u ${ADMIN_USER} -b \
         --become-user=root -i $ADMIN_WORKSPACE/inventory/inventory.cfg \
         --forks=$ANSIBLE_FORKS --timeout $ANSIBLE_TIMEOUT $DEFAULT_OPTS \
         -e ansible_ssh_user=${ADMIN_USER} \
