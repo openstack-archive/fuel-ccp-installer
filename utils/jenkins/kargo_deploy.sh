@@ -42,7 +42,7 @@ ANSIBLE_FORKS=${ANSIBLE_FORKS:-50}
 
 # Valid sources: pip, apt
 ANSIBLE_INSTALL_SOURCE=pip
-required_ansible_version="2.2.1"
+required_ansible_version="2.3.0"
 
 function collect_info {
     # Get diagnostic info and store it as the logs.tar.gz at the admin node
