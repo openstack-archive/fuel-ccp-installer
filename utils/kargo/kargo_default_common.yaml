@@ -22,6 +22,7 @@ dns_forward_max: 300
 kube_version: "v1.5.3"
 hyperkube_image_repo: "quay.io/coreos/hyperkube"
 hyperkube_image_tag: "v1.5.3_coreos.0"
+kubelet_deployment_type: host
 etcd_version: "v3.1.0"
 #Download once, then push to nodes in batches, if enabled
 download_run_once: true
