@@ -274,6 +274,7 @@ if ! admin_node_command type ansible 2>&1 > /dev/null; then
         with_retries admin_node_command -- sudo apt-get install -y ansible python-netaddr
     elif [[ "$ANSIBLE_INSTALL_SOURCE" == "pip" ]]; then
         with_retries admin_node_command -- sudo apt-get install -y python-netaddr libssl-dev python-pip
+        with_retries admin_node_command -- sudo easy_install --upgrade --user pyasn1
         with_retries admin_node_command -- sudo pip install --upgrade ansible==$required_ansible_version
     else
          echo "ERROR: Unknown Ansible install source: ${ANSIBLE_INSTALL_SOURCE}"
