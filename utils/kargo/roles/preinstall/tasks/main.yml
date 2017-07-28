@@ -10,7 +10,7 @@
 
 # bug from bugs.debian.org/843783
 - name: "Install latest pyopenssl as workaround"
-  raw: pip install -U pyopenssl
+  raw: pip install -U pyopenssl netaddr
 
 - name: Gather facts
   setup:
