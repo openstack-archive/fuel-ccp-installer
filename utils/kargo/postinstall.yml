@@ -1,5 +1,0 @@
----
-- hosts: k8s-cluster
-  roles:
-    - { role: postinstall, tags: postinstall }
-

@@ -1,5 +1,0 @@
----
-- hosts: kube-master[0]
-  roles:
-    - { role: e2e_conformance, tags: e2e_conformance }
-

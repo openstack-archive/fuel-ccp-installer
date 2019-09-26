@@ -1,2 +1,0 @@
-# All values can be overridden in CUSTOM_YAML
-docker_version: '1.13'

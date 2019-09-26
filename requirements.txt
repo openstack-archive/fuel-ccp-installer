@@ -1,3 +1,0 @@
--e git+https://github.com/openstack/fuel-devops.git@3.0.1#egg=fuel-devops
-netaddr
-configparser>=3.3.0

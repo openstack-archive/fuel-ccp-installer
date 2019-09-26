@@ -1,7 +1,0 @@
-grub2-common:
-grub-pc-bin:
-cloud-init:
-linux-image-generic:
-net-tools:
-isc-dhcp-client:
-python:
